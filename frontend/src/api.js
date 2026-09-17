@@ -330,6 +330,10 @@ export const api = {
     body: JSON.stringify(typeof patch === "string" ? { note: patch } : patch),
   }),
   deleteSceneTrace: (id) => request(`/api/scene/traces/${id}`, { method: "DELETE" }),
+  deleteSceneTracesByCase: (caseId) => request(
+    `/api/scene/traces?case_id=${encodeURIComponent(caseId)}`,
+    { method: "DELETE" },
+  ),
 
   // ===== Đối sánh dấu vết (engine HBIE) =====
   // Bảng KẾT QUẢ ĐỐI SÁNH của vụ án. Tra ve { items, total, config } — config co

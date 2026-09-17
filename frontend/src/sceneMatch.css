@@ -489,9 +489,9 @@ label.smp-drop.on {
 }
 
 .smp-tr-row {
-  /* 6 cot: thumb | ma+ten file | vi tri dau vet | thoi gian | nut | tick. */
+  /* 5 cot: thumb | ma+ten file | vi tri dau vet | thoi gian | nut. */
   display: grid;
-  grid-template-columns: 48px minmax(0, 1.2fr) minmax(0, 1fr) 124px 90px 24px;
+  grid-template-columns: 48px minmax(0, 1.2fr) minmax(0, 1fr) 124px 90px;
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
@@ -501,15 +501,11 @@ label.smp-drop.on {
   flex: 0 0 auto;
   border: 1.5px solid #1b3355;
   background: rgba(11, 24, 44, .7);
-  cursor: pointer;
+  cursor: default;
 }
 
 .smp-tr-row:hover {
   border-color: #3a5f8c;
-}
-
-.smp-tr-row.on {
-  border-color: #2272e8;
 }
 
 .smp-tr-meta {
@@ -543,12 +539,6 @@ label.smp-drop.on {
 .smp-tr-time {
   text-align: right;
   padding-right: 4px;
-}
-
-.smp-check {
-  color: #2272e8;
-  font-weight: 700;
-  text-align: right;
 }
 
 /* Hồ sơ đối tượng */
@@ -738,33 +728,6 @@ label.smp-drop.on {
   height: 100%;
   /* position: popover cua nut Bo loc / menu the can containing block o day. */
   position: relative;
-}
-
-/* Dấu tích chọn ảnh — tròn xanh như design. */
-.smp-tick-dot {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #2272e8;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-/* Dashboard.jsx co rule global `svg { width:20px; height:20px; stroke:currentColor;
-   stroke-width:1.9 }`. CSS thang HTML attribute nen IcCheck bi ghi de CA 3 thu:
-     - width/height="12" -> 20px  = kin het vong tron 20px
-     - stroke="#fff"     -> currentColor, ma .smp-check co color:#2272e8
-                            => dau tich XANH tren nen XANH = vo hinh (loi o list view)
-     - strokeWidth="3"   -> 1.9px = net qua mo
-   Ep lai ca 3 ngay trong dot, khong sua rule global de khong anh huong ca app. */
-.smp-tick-dot>svg {
-  width: 12px;
-  height: 12px;
-  flex: 0 0 auto;
-  stroke: #fff;
-  stroke-width: 3;
 }
 
 .smp-sub-row-right {
@@ -2758,24 +2721,6 @@ label.smp-drop.on {
   font-size: 13px;
 }
 
-/* Nut 3 cham (chon tat ca) canh nut Bo loc: vuong, cao BANG nut Bo loc (40px)
-   de 2 nut thang hang. .smp-trg co padding 9px 14px cho nut co chu, o day bo
-   padding ngang di vi chi co icon. */
-.smp-trg-bulk {
-  justify-content: center;
-  gap: 0;
-  width: 40px;
-  flex: 0 0 40px;
-  padding: 9px 0;
-}
-
-/* IcDots dat fill="#7f95b5" trong SVG, nhung rule global `svg { stroke: currentColor }`
-   cua Dashboard.jsx ep size 20px -> giu 16px cho khop icon khac tren toolbar. */
-.smp-trg-bulk>svg {
-  width: 16px;
-  height: 16px;
-}
-
 /* Dropdown "Tất cả đối tượng". */
 .smp-trg-subj {
   justify-content: space-between;
@@ -2819,14 +2764,6 @@ label.smp-drop.on {
 
 .smp-pop-tsort {
   width: 200px;
-}
-
-/* PHAI khop voi prop width={196} cua PopMenu: place() tinh left = btn.right - W + 2
-   theo con so JS, con be ngang that lai do CSS quyet dinh. Khong co rule nay thi
-   popover roi ve min-width 168px (cua .smp-menu-pop) => JS can le cho 196 nhung
-   box chi 168 => lech 28px sang trai. Doi 1 so thi doi ca 2 cho. */
-.smp-pop-bulk {
-  width: 196px;
 }
 
 /* Design không đặt max-height, nhưng ở đây danh sách là 1 + 9 đối tượng
@@ -3360,14 +3297,6 @@ textarea.smp-modal-in {
   font-size: 12.5px;
   white-space: nowrap;
   flex: 0 0 auto;
-  box-sizing: border-box;
-}
-
-.smp-panel-trace .smp-trg-bulk {
-  height: 32px;
-  width: 32px;
-  padding: 0;
-  flex: 0 0 32px;
   box-sizing: border-box;
 }
 

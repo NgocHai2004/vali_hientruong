@@ -5368,6 +5368,15 @@ const styles = `
     color: var(--text);
     background: var(--bg-panel);
   }
+  select.control {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 42px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23cbdcf3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 7.5 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 14px 14px;
+  }
   .control:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(34, 113, 236, .12);

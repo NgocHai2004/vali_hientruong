@@ -2736,6 +2736,54 @@ async def update_scene_trace(
     return _s_scene(doc)
 
 
+@app.delete("/api/scene/traces")
+async def delete_scene_traces_by_case(
+    request: Request,
+    case_id: str = Query(..., min_length=1),
+    user: dict = Depends(get_current_user),
+):
+    """Xóa toàn bộ dấu vết và kết quả đối sánh thuộc một vụ án."""
+    case_doc = await _scene_case_or_400(case_id)
+    _ensure_case_editable(case_doc)
+    case_query = _case_id_query(case_doc)
+    traces = [
+        doc async for doc in db.scene_traces.find(
+            {"case_id": case_query}, {"_id": 1, "url": 1}
+        )
+    ]
+    trace_ids = [doc["_id"] for doc in traces]
+
+    trace_result = await db.scene_traces.delete_many({"case_id": case_query})
+    match_result = await db.scene_matches.delete_many({"case_id": case_query})
+    if trace_ids:
+        # Dọn cả dữ liệu cũ thiếu/sai case_id nhưng vẫn liên kết đúng trace_id.
+        extra = await db.scene_matches.delete_many({"trace_id": {"$in": trace_ids}})
+        deleted_matches = match_result.deleted_count + extra.deleted_count
+    else:
+        deleted_matches = match_result.deleted_count
+
+    for doc in traces:
+        _delete_scene_file(doc.get("url"))
+
+    await _log(
+        request,
+        user,
+        "delete",
+        "scene_traces",
+        case_doc.get("code", case_id),
+        case_id=case_doc["_id"],
+        data={
+            "deleted_traces": trace_result.deleted_count,
+            "deleted_matches": deleted_matches,
+        },
+    )
+    return {
+        "ok": True,
+        "deleted_traces": trace_result.deleted_count,
+        "deleted_matches": deleted_matches,
+    }
+
+
 @app.delete("/api/scene/traces/{trace_id}")
 async def delete_scene_trace(
     trace_id: str,
@@ -2941,9 +2989,17 @@ async def _match_trace(trace_doc: dict, case_doc: dict) -> dict:
             })
 
     pairs.sort(key=lambda p: p["score"], reverse=True)
+    # Dấu vết có thể bị xóa trong lúc HBIE đang chạy. Không ghi lại kết quả mồ
+    # côi sau thao tác xóa một ảnh hoặc xóa toàn bộ ảnh của vụ án.
+    if not await db.scene_traces.find_one({"_id": trace_doc["_id"]}, {"_id": 1}):
+        await db.scene_matches.delete_many({"trace_id": trace_doc["_id"]})
+        return {"count": 0, "best": 0, "cancelled": True}
     await db.scene_matches.delete_many({"trace_id": trace_doc["_id"]})
     if pairs:
         await db.scene_matches.insert_many(pairs)
+    if not await db.scene_traces.find_one({"_id": trace_doc["_id"]}, {"_id": 1}):
+        await db.scene_matches.delete_many({"trace_id": trace_doc["_id"]})
+        return {"count": 0, "best": 0, "cancelled": True}
     best = pairs[0] if pairs else None
     await db.scene_traces.update_one(
         {"_id": trace_doc["_id"]},
