@@ -129,6 +129,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
         const fingerprints = d.fingerprints || {};
         return {
           id: d.id || `sub-${i + 1}`,
+          detainee: d,
           name: d.full_name || d.name,
           cccd: d.cccd_number || d.cccd || "—",
           dob: d.dob || d.birth_year || "—",
@@ -553,6 +554,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           subjects={subjectsList}
           openSub={openSub || ""}
           setOpenSub={setOpenSub}
+          onOpenDetainee={onOpenDetainee}
           // ponytail: chi chan theo status (co trong payload san). Backend con chan
           // officer != user va role admin -> se bao 403 luc luu. Them officer vao
           onAdd={onAddSubject && (!session || session.status === "open" || session.status === "investigating" || session.status === "active" || session.status !== "closed")
@@ -722,15 +724,6 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
                 </>
               )}
             />
-            <button
-              type="button"
-              className="smp-trg smp-trg-report"
-              onClick={() => setShowReport(true)}
-              title={t("scene.report.view") || "Xem báo cáo"}
-            >
-              <IcEye s={15} />
-              <span>{t("scene.report.view") || "Xem báo cáo"}</span>
-            </button>
           </div>
         </div>
 
@@ -750,9 +743,9 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
         </div>
 
         <div className="smp-mt-body">
-          {loading && <div className="scene-empty">{t("common.loading")}</div>}
+          {loading && <div className="scene-empty smp-mt-status">{t("common.loading")}</div>}
           {!loading && pageRows.length === 0 && (
-            <div className="scene-empty">{t("smp.match.empty")}</div>
+            <div className="scene-empty smp-mt-status">{t("smp.match.empty")}</div>
           )}
           {!loading && pageRows.map((r, i) => {
             const globalIdx = (page - 1) * PAGE_SIZE + i;
@@ -1200,7 +1193,7 @@ function TraceEditModal({ t, item, code, onClose, onSave }) {
 
 /* ---------- Panel: HỒ SƠ ĐỐI TƯỢNG (data giả) ---------- */
 function SubjectPanel({
-  t, subjects, openSub, setOpenSub, onAdd, addDisabledHint,
+  t, subjects, openSub, setOpenSub, onOpenDetainee, onAdd, addDisabledHint,
 }) {
   const total = subjects.length;
   const photos = subjects.reduce((n, s) => n + s.photoCount, 0);
@@ -1248,7 +1241,13 @@ function SubjectPanel({
                     <div>{t("smp.sub.dob")}: {s.dob}</div>
                     <div>{t("smp.sub.sex")}: {s.sex}</div>
                   </div>
-                  <button type="button" className="btn-link">{t("smp.sub.detail")}</button>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => onOpenDetainee?.(s.detainee || s)}
+                  >
+                    {t("smp.sub.detail")}
+                  </button>
                 </div>
                 <div className="smp-hands">
                   {[["right", t("smp.sub.right")], ["left", t("smp.sub.left")]].map(([key, label]) => (
