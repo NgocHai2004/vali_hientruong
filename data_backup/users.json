@@ -1,0 +1,53 @@
+[
+  {
+    "_id": {
+      "$oid": "6a5618294cd0f52bf1ec6939"
+    },
+    "username": "admin",
+    "password_hash": "$2b$12$cxjbNEpJdHaF7WR6gr4D7.KpIqQqTQsiXxtQxIhUaXujT72vJJuVi",
+    "role": "admin",
+    "created_at": {
+      "$date": "2026-07-14T11:06:17.921Z"
+    },
+    "full_name": "Nguyễn Tuấn Anh"
+  },
+  {
+    "_id": {
+      "$oid": "6a5cfb287edce5c13cebd9f4"
+    },
+    "username": "canbo01",
+    "full_name": "Nguyễn Ngọc Hải",
+    "role": "user",
+    "password_hash": "$2b$12$BkWUs1m2CkNZmx/Rdosss./J71p5FMQPaJPsIZrr3ndT118uFK/ka",
+    "created_at": {
+      "$date": "2026-07-19T16:28:24.258Z"
+    },
+    "avatar_url": null
+  },
+  {
+    "_id": {
+      "$oid": "6a5cfb287edce5c13cebd9f5"
+    },
+    "username": "canbo02",
+    "full_name": "Trần Văn Long",
+    "role": "user",
+    "password_hash": "$2b$12$su6CYVtfPOsOYxfx3M7Ta.NcJhI4P2kQ4jPq9z1HoNlOgz3goomSG",
+    "created_at": {
+      "$date": "2026-07-19T16:28:24.258Z"
+    },
+    "avatar_url": null
+  },
+  {
+    "_id": {
+      "$oid": "6a5cfb287edce5c13cebd9f6"
+    },
+    "username": "canbo03",
+    "full_name": "Phạm Thu Trang",
+    "role": "user",
+    "password_hash": "$2b$12$2c9Kbw47ncdkt43Q9xo8Qew1IWvD3Fd99oUvhCDHlSL99Qrn3xuH6",
+    "created_at": {
+      "$date": "2026-07-19T16:28:24.258Z"
+    },
+    "avatar_url": null
+  }
+]

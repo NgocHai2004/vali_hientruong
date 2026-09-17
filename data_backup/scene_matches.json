@@ -1,0 +1,377 @@
+[
+  {
+    "_id": {
+      "$oid": "6aaa9421ca4803c6d7114b2a"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa7443dababf1bc3481bc4"
+    },
+    "trace_seq": 3,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "right_little",
+    "score": 1000,
+    "percent": 100.0,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:34.494Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9421ca4803c6d7114b2b"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa7443dababf1bc3481bc4"
+    },
+    "trace_seq": 3,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "left_index",
+    "score": 948,
+    "percent": 94.8,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:30.722Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9421ca4803c6d7114b2c"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa7443dababf1bc3481bc4"
+    },
+    "trace_seq": 3,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "right_middle",
+    "score": 946,
+    "percent": 94.6,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:34.856Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9421ca4803c6d7114b2d"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa7443dababf1bc3481bc4"
+    },
+    "trace_seq": 3,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "left_middle",
+    "score": 912,
+    "percent": 91.2,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:31.779Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9421ca4803c6d7114b2e"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa7443dababf1bc3481bc4"
+    },
+    "trace_seq": 3,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "left_little",
+    "score": 816,
+    "percent": 81.6,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:31.083Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9426ca4803c6d7114b2f"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa76a6bbe0d7577d64daaa"
+    },
+    "trace_seq": 4,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "left_index",
+    "score": 999,
+    "percent": 99.9,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:37.847Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9426ca4803c6d7114b30"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa76a6bbe0d7577d64daaa"
+    },
+    "trace_seq": 4,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "right_little",
+    "score": 948,
+    "percent": 94.8,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:41.349Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9426ca4803c6d7114b31"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa76a6bbe0d7577d64daaa"
+    },
+    "trace_seq": 4,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "right_middle",
+    "score": 934,
+    "percent": 93.4,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:41.802Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9426ca4803c6d7114b32"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa76a6bbe0d7577d64daaa"
+    },
+    "trace_seq": 4,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "left_middle",
+    "score": 906,
+    "percent": 90.6,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:38.943Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9426ca4803c6d7114b33"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa76a6bbe0d7577d64daaa"
+    },
+    "trace_seq": 4,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "left_little",
+    "score": 817,
+    "percent": 81.7,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:38.445Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9439ca4803c6d7114b34"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa9414ca4803c6d7114b23"
+    },
+    "trace_seq": 5,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "left_little",
+    "score": 999,
+    "percent": 99.9,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:57.788Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9439ca4803c6d7114b35"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa9414ca4803c6d7114b23"
+    },
+    "trace_seq": 5,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "left_middle",
+    "score": 863,
+    "percent": 86.3,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:58.498Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9439ca4803c6d7114b36"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa9414ca4803c6d7114b23"
+    },
+    "trace_seq": 5,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "left_index",
+    "score": 817,
+    "percent": 81.7,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:05:57.080Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9439ca4803c6d7114b37"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa9414ca4803c6d7114b23"
+    },
+    "trace_seq": 5,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "right_little",
+    "score": 816,
+    "percent": 81.6,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:06:00.086Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9439ca4803c6d7114b38"
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "trace_id": {
+      "$oid": "6aaa9414ca4803c6d7114b23"
+    },
+    "trace_seq": 5,
+    "detainee_id": {
+      "$oid": "6aaa4d096264fc758e90099e"
+    },
+    "detainee_name": "Nguyễn Ngọc Hải",
+    "detainee_code": "CP00001",
+    "finger_code": "right_middle",
+    "score": 778,
+    "percent": 77.8,
+    "verdict": "match",
+    "engine": "hbie",
+    "created_at": {
+      "$date": "2026-09-16T13:06:00.482Z"
+    }
+  }
+]

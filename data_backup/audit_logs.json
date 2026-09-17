@@ -1,0 +1,440 @@
+[
+  {
+    "_id": {
+      "$oid": "6aaa61689c21ec4726bf9eb4"
+    },
+    "at": {
+      "$date": "2026-09-16T09:29:12.463Z"
+    },
+    "actor": "canbo01",
+    "action": "create",
+    "resource": "case",
+    "ref": "VA20260916-0001",
+    "ref_id": "6aaa61689c21ec4726bf9eb3",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa61689c21ec4726bf9eb3"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa6aab1bc0f0f8c91904e1"
+    },
+    "at": {
+      "$date": "2026-09-16T10:08:43.673Z"
+    },
+    "actor": "canbo01",
+    "action": "update",
+    "resource": "detainee",
+    "ref": "cp004",
+    "ref_id": "6aaa4d096264fc758e90099e",
+    "ip": "127.0.0.1",
+    "data": {
+      "full_name": "Nguyễn Ngọc Hải"
+    },
+    "case_id": "6aaa4c7b6264fc758e90098d"
+  },
+  {
+    "_id": {
+      "$oid": "6aaa6ff6a01f581f7752d84c"
+    },
+    "at": {
+      "$date": "2026-09-16T10:31:18.993Z"
+    },
+    "actor": "canbo01",
+    "action": "create",
+    "resource": "scene_trace",
+    "ref": "#1",
+    "ref_id": "6aaa6ff6a01f581f7752d84b",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa61689c21ec4726bf9eb3"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa700da01f581f7752d84f"
+    },
+    "at": {
+      "$date": "2026-09-16T10:31:41.270Z"
+    },
+    "actor": "canbo01",
+    "action": "create",
+    "resource": "scene_trace",
+    "ref": "#2",
+    "ref_id": "6aaa700da01f581f7752d84e",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa61689c21ec4726bf9eb3"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa7058a01f581f7752d852"
+    },
+    "at": {
+      "$date": "2026-09-16T10:32:56.252Z"
+    },
+    "actor": "canbo01",
+    "action": "create",
+    "resource": "scene_trace",
+    "ref": "#3",
+    "ref_id": "6aaa7058a01f581f7752d851",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa61689c21ec4726bf9eb3"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa714ba118d758ebb10967"
+    },
+    "at": {
+      "$date": "2026-09-16T10:36:59.902Z"
+    },
+    "actor": "canbo01",
+    "action": "create",
+    "resource": "scene_trace",
+    "ref": "#1",
+    "ref_id": "6aaa714ba118d758ebb10966",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa72eba118d758ebb10968"
+    },
+    "at": {
+      "$date": "2026-09-16T10:43:55.136Z"
+    },
+    "actor": "canbo01",
+    "action": "delete",
+    "resource": "scene_trace",
+    "ref": "#1",
+    "ref_id": "6aaa4d566264fc758e9009a1",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa72efa118d758ebb1096b"
+    },
+    "at": {
+      "$date": "2026-09-16T10:43:59.783Z"
+    },
+    "actor": "canbo01",
+    "action": "create",
+    "resource": "scene_trace",
+    "ref": "#2",
+    "ref_id": "6aaa72efa118d758ebb1096a",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa7421dababf1bc3481bbc"
+    },
+    "at": {
+      "$date": "2026-09-16T10:49:05.974Z"
+    },
+    "actor": "canbo01",
+    "action": "login",
+    "resource": "auth",
+    "ref": "",
+    "ref_id": "",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": null
+  },
+  {
+    "_id": {
+      "$oid": "6aaa742edababf1bc3481bbd"
+    },
+    "at": {
+      "$date": "2026-09-16T10:49:18.024Z"
+    },
+    "actor": "canbo01",
+    "action": "match",
+    "resource": "scene_case",
+    "ref": "VA20260916-0001",
+    "ref_id": "6aaa4c7b6264fc758e90098d",
+    "ip": "127.0.0.1",
+    "data": {
+      "traces_count": 3,
+      "matched_count": 0,
+      "errors": []
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa742fdababf1bc3481bbe"
+    },
+    "at": {
+      "$date": "2026-09-16T10:49:19.808Z"
+    },
+    "actor": "canbo01",
+    "action": "match",
+    "resource": "scene_case",
+    "ref": "VA20260916-0001",
+    "ref_id": "6aaa4c7b6264fc758e90098d",
+    "ip": "127.0.0.1",
+    "data": {
+      "traces_count": 3,
+      "matched_count": 0,
+      "errors": []
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa7437dababf1bc3481bbf"
+    },
+    "at": {
+      "$date": "2026-09-16T10:49:27.772Z"
+    },
+    "actor": "canbo01",
+    "action": "delete",
+    "resource": "scene_trace",
+    "ref": "#2",
+    "ref_id": "6aaa4d776264fc758e9009a4",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa7439dababf1bc3481bc0"
+    },
+    "at": {
+      "$date": "2026-09-16T10:49:29.197Z"
+    },
+    "actor": "canbo01",
+    "action": "delete",
+    "resource": "scene_trace",
+    "ref": "#1",
+    "ref_id": "6aaa714ba118d758ebb10966",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa743bdababf1bc3481bc1"
+    },
+    "at": {
+      "$date": "2026-09-16T10:49:31.740Z"
+    },
+    "actor": "canbo01",
+    "action": "delete",
+    "resource": "scene_trace",
+    "ref": "#2",
+    "ref_id": "6aaa72efa118d758ebb1096a",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa743cdababf1bc3481bc2"
+    },
+    "at": {
+      "$date": "2026-09-16T10:49:32.516Z"
+    },
+    "actor": "canbo01",
+    "action": "match",
+    "resource": "scene_case",
+    "ref": "VA20260916-0001",
+    "ref_id": "6aaa4c7b6264fc758e90098d",
+    "ip": "127.0.0.1",
+    "data": {
+      "traces_count": 0,
+      "matched_count": 0,
+      "errors": []
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa7443dababf1bc3481bc5"
+    },
+    "at": {
+      "$date": "2026-09-16T10:49:39.545Z"
+    },
+    "actor": "canbo01",
+    "action": "create",
+    "resource": "scene_trace",
+    "ref": "#3",
+    "ref_id": "6aaa7443dababf1bc3481bc4",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa7449dababf1bc3481bc6"
+    },
+    "at": {
+      "$date": "2026-09-16T10:49:45.311Z"
+    },
+    "actor": "canbo01",
+    "action": "match",
+    "resource": "scene_case",
+    "ref": "VA20260916-0001",
+    "ref_id": "6aaa4c7b6264fc758e90098d",
+    "ip": "127.0.0.1",
+    "data": {
+      "traces_count": 1,
+      "matched_count": 0,
+      "errors": []
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa76a6bbe0d7577d64daab"
+    },
+    "at": {
+      "$date": "2026-09-16T10:59:50.908Z"
+    },
+    "actor": "canbo01",
+    "action": "create",
+    "resource": "scene_trace",
+    "ref": "#4",
+    "ref_id": "6aaa76a6bbe0d7577d64daaa",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa76bdbbe0d7577d64dabb"
+    },
+    "at": {
+      "$date": "2026-09-16T11:00:13.559Z"
+    },
+    "actor": "canbo01",
+    "action": "match",
+    "resource": "scene_case",
+    "ref": "VA20260916-0001",
+    "ref_id": "6aaa4c7b6264fc758e90098d",
+    "ip": "127.0.0.1",
+    "data": {
+      "traces_count": 2,
+      "matched_count": 10,
+      "errors": []
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa76c8bbe0d7577d64dac6"
+    },
+    "at": {
+      "$date": "2026-09-16T11:00:24.977Z"
+    },
+    "actor": "canbo01",
+    "action": "match",
+    "resource": "scene_case",
+    "ref": "VA20260916-0001",
+    "ref_id": "6aaa4c7b6264fc758e90098d",
+    "ip": "127.0.0.1",
+    "data": {
+      "traces_count": 2,
+      "matched_count": 10,
+      "errors": []
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9414ca4803c6d7114b24"
+    },
+    "at": {
+      "$date": "2026-09-16T13:05:24.903Z"
+    },
+    "actor": "canbo01",
+    "action": "create",
+    "resource": "scene_trace",
+    "ref": "#5",
+    "ref_id": "6aaa9414ca4803c6d7114b23",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aaa9439ca4803c6d7114b39"
+    },
+    "at": {
+      "$date": "2026-09-16T13:06:01.955Z"
+    },
+    "actor": "canbo01",
+    "action": "match",
+    "resource": "scene_case",
+    "ref": "VA20260916-0001",
+    "ref_id": "6aaa4c7b6264fc758e90098d",
+    "ip": "127.0.0.1",
+    "data": {
+      "traces_count": 3,
+      "matched_count": 15,
+      "errors": []
+    },
+    "case_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6aab46248b9068c0fd3f5c3e"
+    },
+    "at": {
+      "$date": "2026-09-17T01:45:08.702Z"
+    },
+    "actor": "canbo01",
+    "action": "login",
+    "resource": "auth",
+    "ref": "",
+    "ref_id": "",
+    "ip": "127.0.0.1",
+    "data": {},
+    "case_id": null
+  }
+]

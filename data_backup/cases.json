@@ -1,0 +1,49 @@
+[
+  {
+    "_id": {
+      "$oid": "6aaa61689c21ec4726bf9eb3"
+    },
+    "code": "VA20260916-0001",
+    "status": "investigating",
+    "name": "Trộm gà",
+    "location": "Vĩnh Phúc",
+    "officer_name": "Nguyễn Ngọc Hải",
+    "officer_rank": "Thượng tá",
+    "occurred_at": {
+      "$date": "2026-09-16T16:29:00Z"
+    },
+    "note": "",
+    "created_at": {
+      "$date": "2026-09-16T09:29:12.458Z"
+    },
+    "created_by": "canbo01",
+    "closed_at": null,
+    "report_url": null,
+    "report_filename": null
+  },
+  {
+    "_id": {
+      "$oid": "6aaa4c7b6264fc758e90098d"
+    },
+    "code": "VA20260916-0001",
+    "status": "investigating",
+    "name": "Vụ án trộm cắp tài sản",
+    "location": "Vĩnh Phúc",
+    "officer_name": "Nguyễn Ngọc Hải",
+    "officer_rank": "Trung tá",
+    "occurred_at": {
+      "$date": "2026-09-16T14:59:00Z"
+    },
+    "note": "",
+    "created_at": {
+      "$date": "2026-09-16T07:59:55Z"
+    },
+    "created_by": "canbo01",
+    "closed_at": null,
+    "report_url": null,
+    "report_filename": null,
+    "updated_at": {
+      "$date": "2026-09-16T08:02:17Z"
+    }
+  }
+]

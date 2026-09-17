@@ -1,0 +1,322 @@
+[
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631679"
+    },
+    "code": "01001",
+    "name": "Phường Ba Đình",
+    "province_code": "01",
+    "unit_type": "phuong",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e063167a"
+    },
+    "code": "01002",
+    "name": "Phường Hoàn Kiếm",
+    "province_code": "01",
+    "unit_type": "phuong",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e063167b"
+    },
+    "code": "01003",
+    "name": "Phường Hai Bà Trưng",
+    "province_code": "01",
+    "unit_type": "phuong",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e063167c"
+    },
+    "code": "01004",
+    "name": "Phường Đống Đa",
+    "province_code": "01",
+    "unit_type": "phuong",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e063167d"
+    },
+    "code": "01005",
+    "name": "Phường Cầu Giấy",
+    "province_code": "01",
+    "unit_type": "phuong",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e063167e"
+    },
+    "code": "01006",
+    "name": "Phường Thanh Xuân",
+    "province_code": "01",
+    "unit_type": "phuong",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e063167f"
+    },
+    "code": "01007",
+    "name": "Phường Hoàng Mai",
+    "province_code": "01",
+    "unit_type": "phuong",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631680"
+    },
+    "code": "01008",
+    "name": "Phường Long Biên",
+    "province_code": "01",
+    "unit_type": "phuong",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631681"
+    },
+    "code": "01009",
+    "name": "Phường Tây Hồ",
+    "province_code": "01",
+    "unit_type": "phuong",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631682"
+    },
+    "code": "01010",
+    "name": "Phường Hà Đông",
+    "province_code": "01",
+    "unit_type": "phuong",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631683"
+    },
+    "code": "01501",
+    "name": "Xã Đông Anh",
+    "province_code": "01",
+    "unit_type": "xa",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631684"
+    },
+    "code": "01502",
+    "name": "Xã Gia Lâm",
+    "province_code": "01",
+    "unit_type": "xa",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631685"
+    },
+    "code": "01503",
+    "name": "Xã Sóc Sơn",
+    "province_code": "01",
+    "unit_type": "xa",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631686"
+    },
+    "code": "01504",
+    "name": "Xã Thanh Trì",
+    "province_code": "01",
+    "unit_type": "xa",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631687"
+    },
+    "code": "01505",
+    "name": "Xã Hoài Đức",
+    "province_code": "01",
+    "unit_type": "xa",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631688"
+    },
+    "code": "01506",
+    "name": "Xã Đan Phượng",
+    "province_code": "01",
+    "unit_type": "xa",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e0631689"
+    },
+    "code": "01507",
+    "name": "Xã Thường Tín",
+    "province_code": "01",
+    "unit_type": "xa",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e063168a"
+    },
+    "code": "01508",
+    "name": "Xã Ba Vì",
+    "province_code": "01",
+    "unit_type": "xa",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e063168b"
+    },
+    "code": "01509",
+    "name": "Xã Sơn Tây",
+    "province_code": "01",
+    "unit_type": "xa",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a8b11762ab03ad9e063168c"
+    },
+    "code": "01510",
+    "name": "Xã Chương Mỹ",
+    "province_code": "01",
+    "unit_type": "xa",
+    "active": true,
+    "created_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-23T15:27:50.312Z"
+    }
+  }
+]

@@ -1,0 +1,164 @@
+[
+  {
+    "_id": {
+      "$oid": "6a718bbbad75a8a11b784258"
+    },
+    "code": "TTG",
+    "name": "Trại tạm giam",
+    "capacity": 0,
+    "note": "",
+    "level": "facility",
+    "parent": null,
+    "custody_type": "tam_giam",
+    "created_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a718bbbad75a8a11b784259"
+    },
+    "code": "NTG",
+    "name": "Nhà tạm giữ",
+    "capacity": 0,
+    "note": "",
+    "level": "facility",
+    "parent": null,
+    "custody_type": "tam_giu",
+    "created_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a718bbbad75a8a11b78425a"
+    },
+    "code": "PT1",
+    "name": "Phân trại 1",
+    "capacity": 0,
+    "note": "",
+    "level": "sub_camp",
+    "parent": "TTG",
+    "custody_type": null,
+    "created_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a718bbbad75a8a11b78425b"
+    },
+    "code": "PT2",
+    "name": "Phân trại 2",
+    "capacity": 0,
+    "note": "",
+    "level": "sub_camp",
+    "parent": "TTG",
+    "custody_type": null,
+    "created_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a718bbbad75a8a11b78425c"
+    },
+    "code": "B101",
+    "name": "Buồng 101",
+    "capacity": 20,
+    "note": "Phân trại 1",
+    "level": "cell",
+    "parent": "PT1",
+    "custody_type": null,
+    "created_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a718bbbad75a8a11b78425d"
+    },
+    "code": "B102",
+    "name": "Buồng 102",
+    "capacity": 20,
+    "note": "Phân trại 1",
+    "level": "cell",
+    "parent": "PT1",
+    "custody_type": null,
+    "created_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a718bbbad75a8a11b78425e"
+    },
+    "code": "B201",
+    "name": "Buồng 201",
+    "capacity": 25,
+    "note": "Phân trại 2",
+    "level": "cell",
+    "parent": "PT2",
+    "custody_type": null,
+    "created_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a718bbbad75a8a11b78425f"
+    },
+    "code": "B01",
+    "name": "Buồng 01",
+    "capacity": 15,
+    "note": "Nhà tạm giữ",
+    "level": "cell",
+    "parent": "NTG",
+    "custody_type": null,
+    "created_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a718bbbad75a8a11b784260"
+    },
+    "code": "B02",
+    "name": "Buồng 02",
+    "capacity": 15,
+    "note": "Nhà tạm giữ - nữ",
+    "level": "cell",
+    "parent": "NTG",
+    "custody_type": null,
+    "created_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    },
+    "updated_at": {
+      "$date": "2026-08-04T06:50:35.225Z"
+    }
+  }
+]

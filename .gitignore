@@ -43,8 +43,6 @@ mongo_log/
 mongo_portable/
 
 # ===== Backend runtime =====
-backend/uploads/
-backend/data_cccd/
 backend/*.log
 backend/*.log.*
 backend/uvicorn.*.log
@@ -97,8 +95,6 @@ backend/services/cccd_scanner/Logs/
 # Model OCR PaddleOCR >100MB (vuot gioi han file GitHub, phai tai ve local)
 backend/services/cccd_scanner/publish/Sdcb.PaddleOCR.Models.LocalV3.dll
 backend/services/cccd_scanner/publish/Sdcb.PaddleOCR.Models.LocalV4.dll
-backend/data_cccd/
-backend/uploads/
 backend/fp/
 
 # ===== Logs =====
