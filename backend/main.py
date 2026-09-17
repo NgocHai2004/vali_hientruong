@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import io
 import re
@@ -68,12 +69,13 @@ def _env_bool(name: str, default: bool = True) -> bool:
 FEATURE_CCCD_READER = _env_bool("FEATURE_CCCD_READER")
 FEATURE_WEIGHT_SCALE = _env_bool("FEATURE_WEIGHT_SCALE")
 FEATURE_HEIGHT_YOLO = _env_bool("FEATURE_HEIGHT_YOLO")
+FEATURE_USB_DONGLE = _env_bool("FEATURE_USB_DONGLE", default=False)
 
 # Doc qua _env_str_from_dotenv (khong phai os.getenv thuong): backend co the
 # duoc start tu shell KHONG load .env (vd `python run_backend.py`). Neu de
 # default cu thi instance nay am tham noi sang mongod 27017 cua App_CCCD.
 MONGO_URL = _env_str_from_dotenv("MONGO_URL") or "mongodb://localhost:27018"
-DB_NAME = os.getenv("DB_NAME", "app_cccd")
+DB_NAME = _env_str_from_dotenv("DB_NAME") or os.getenv("DB_NAME", "app_cccd")
 JWT_SECRET = _env_str_from_dotenv("JWT_SECRET") or "change-me-in-production-please-abc123xyz"
 JWT_ALGO = "HS256"
 TOKEN_TTL_MINUTES = 60 * 8
@@ -821,6 +823,9 @@ async def dongle_verify(user: dict = Depends(get_current_user)):
     - 401  : không phát hiện USB dongle
     - 503  : usb_service không phản hồi (không đủ căn cứ logout)
     """
+    if not FEATURE_USB_DONGLE:
+        return {"ok": True, "drive": "BYPASS", "user": user["username"]}
+
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(f"{USB_SERVICE_URL}/api/usb/verify")
