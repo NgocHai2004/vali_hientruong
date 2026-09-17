@@ -1,68 +1,64 @@
-# Hệ thống Quản lý dự án CCCD (mini)
+# Hệ thống Quản lý Hồ sơ Căn phạm & Hiện trường (Vali Căn Phạm)
 
-Web quản lý phân công công việc dự án CCCD lưu động: 1 tài khoản admin, đăng nhập vào dashboard, tick/thêm/xoá task theo từng thành viên.
+## 1. Giới thiệu
+Hệ thống phần mềm chuyên dụng phục vụ công tác thu thập, quản lý hồ sơ can phạm và khám nghiệm hiện trường lưu động. Ứng dụng tích hợp đa thiết bị ngoại vi gồm camera nhận diện khuôn mặt (AI), máy quét vân tay Morfin, đầu đọc thẻ CCCD gắn chip, cân điện tử và công cụ trích xuất so khớp dấu vết hiện trường.
 
-- **Backend:** FastAPI + MongoDB (motor async)
-- **Frontend:** React (Vite)
-- **Giao diện:** phong cách cổng dịch vụ công (banner đỏ + dải vàng, sub-nav xanh)
+---
 
-## Cấu trúc
+## 2. Cấu trúc thư mục tổng quan
 
-```
-app_cccd/
-├── backend/
-│   ├── main.py                  # FastAPI monolith (auth, detainees, sessions, cccd, weight, face)
-│   ├── cccd_watcher.py          # Session-queue cho CccdService push
-│   ├── person_detect.py         # YOLO person detection
-│   ├── face_recognition_service.py  # InsightFace
-│   ├── weight_hub.py            # WebSocket hub cho cân
-│   ├── tests/
-│   └── services/                # Các service phần cứng (xem services/README.md)
-│       ├── usb_service/         # USB dongle (:8768)
-│       ├── morfin_service/      # Vân tay Morfin (:8767)
-│       ├── cccd_scanner/        # CccdService .NET (binary ngoài git)
-│       └── weight/              # Cân BLE → push backend
-├── frontend/                    # React + Vite (:5174)
-├── run.ps1 / stop.ps1           # Deploy 1 lệnh
-└── start-services.ps1           # Start usb + fingerprint
+```text
+┌── backend/        # FastAPI REST API + xử lý AI (InsightFace, YOLO)
+│   └── services/   # Điều khiển thiết bị ngoại vi (vân tay Morfin, USB dongle, CCCD)
+├── frontend/       # Giao diện web (React 19 + Vite, port 5173)
+├── electron/       # Vỏ ứng dụng desktop (Electron)
+└── *.ps1           # Các script tự động hóa (run, stop, start-services)
 ```
 
-## Chạy
+---
 
-Xem `../RUN.md`. Tóm tắt: tạo `.env`, cài deps, `.\run.ps1`.
+## 3. Cách chạy dự án
 
-## Đăng nhập
+### Chuẩn bị
+1. **Cấu hình môi trường**: Đảm bảo file `.env` ở thư mục gốc có đủ:
+   ```env
+   MONGO_URL=mongodb+srv://...
+   DB_NAME=app_cccd
+   JWT_SECRET=your-jwt-secret
+   DONGLE_SECRET=your-dongle-secret
+   ```
+2. **Cài đặt thư viện**:
+   - Backend:
+     ```powershell
+     .\.venv\Scripts\Activate.ps1
+     pip install -r backend\requirements.txt
+     ```
+   - Frontend:
+     ```powershell
+     cd frontend
+     npm install
+     ```
 
-- Tài khoản: `admin`
-- Mật khẩu: `admin123`
+### Khởi chạy
 
-Có thể đổi mặc định trong `backend/main.py` (`ADMIN_USERNAME`, `ADMIN_PASSWORD`) — nhưng vì admin đã được tạo trong DB nên nếu muốn đổi mật khẩu sau này thì:
-```bash
-mongosh app_cccd --eval 'db.users.deleteOne({username:"admin"})'
+- **Cách 1 — Chạy toàn bộ hệ thống (Khuyên dùng):**
+  ```powershell
+  .\run.ps1
+  ```
+  *(Tự động bật các service phần cứng :8767, :8768, Backend :8000 và Frontend :5173)*
+
+- **Cách 2 — Chạy riêng lẻ để dev:**
+  - Backend:
+    ```powershell
+    .\.venv\Scripts\python.exe -m uvicorn --app-dir backend main:app --port 8000 --reload
+    ```
+  - Frontend:
+    ```powershell
+    cd frontend
+    npm run dev
+    ```
+
+### Dừng hệ thống
+```powershell
+.\stop.ps1
 ```
-rồi restart backend, nó sẽ tạo lại admin với mật khẩu trong code.
-
-## Dashboard làm được gì
-
-- Xem toàn bộ task chia theo 8 nhóm (Tuấn Anh AI, Hải BE, Hải FE, Hoàng Anh khảo sát/tích hợp, Linh Đan mua sắm/QA, Thiết bị cần mua)
-- Tick / bỏ tick task, cập nhật realtime tiến độ %
-- Lọc theo thành viên (Tuấn Anh, Hải, Hoàng Anh, Linh Đan, Chung)
-- Tìm kiếm nhanh theo tên
-- Thêm task mới vào từng nhóm
-- Xoá task (hover vào để hiện nút ×)
-- Hiển thị 4 chỉ số: tổng công việc, đã hoàn thành, chưa hoàn thành, % tiến độ
-
-## API
-
-Tất cả API dưới `/api/*`, đều yêu cầu header `Authorization: Bearer <token>` trừ `login` và `health`.
-
-| Method | Path | Mô tả |
-|---|---|---|
-| POST | `/api/auth/login` | Đăng nhập (form: username, password) |
-| GET | `/api/auth/me` | Lấy user hiện tại |
-| GET | `/api/tasks` | Danh sách toàn bộ task |
-| POST | `/api/tasks` | Tạo task (title, category, member, note) |
-| PATCH | `/api/tasks/{id}` | Cập nhật (done, title, note) |
-| DELETE | `/api/tasks/{id}` | Xoá |
-| GET | `/api/stats` | Thống kê tổng, theo category, theo member |
-| GET | `/api/health` | Kiểm tra kết nối Mongo |
