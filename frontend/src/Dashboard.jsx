@@ -309,19 +309,15 @@ export default function Dashboard({ username = "admin", role = "user", fullName 
   );
 }
 
-// Chip thiet bi tren header. Chip cccd/scale bi an khi thiet bi tuong ung tat
-// (xem lib/features.js) — camera va van tay luon hien.
+// Header chỉ hiển thị hai thiết bị phục vụ thu nhận chính.
 const DEVICE_CHIPS = [
   { key: "camera", labelKey: "header.device.camera" },
-  { key: "cccd", labelKey: "header.device.cccd", feature: "cccd_reader" },
   { key: "fp", labelKey: "header.device.fp" },
-  { key: "scale", labelKey: "header.device.scale", feature: "weight_scale" },
 ];
 
 function Header({ username, fullName, devices, notif, onLogout, isAdmin, onEditProfile, onEditDetainee }) {
   const { t } = useI18n();
-  const features = useFeatures();
-  const chips = DEVICE_CHIPS.filter((d) => !d.feature || features[d.feature]);
+  const chips = DEVICE_CHIPS;
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [viewingMatch, setViewingMatch] = useState(null);

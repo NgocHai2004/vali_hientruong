@@ -1034,7 +1034,7 @@ function SceneTracePanel({
                 <div className="smp-strong">{traceCode(it)}</div>
                 <div className="smp-dim smp-ellip">{fileName(it.url)}</div>
               </div>
-              <div className="smp-dim smp-ellip smp-tr-src">{it.collection_source || "—"}</div>
+              <div className="smp-dim smp-ellip smp-tr-src">{it.collection_source || ""}</div>
               <div className="smp-dim smp-tr-time">{formatDateTime(it.captured_at)}</div>
               {actions(it, false)}
             </div>
