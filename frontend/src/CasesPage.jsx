@@ -4,7 +4,7 @@ import { useI18n } from "./i18n";
 import CaseFormModal from "./CaseFormModal";
 import {
   IcChevRight, IcInfo, IcPageNext, IcPagePrev, IcPencil, IcPlus,
-  IcReanalyze, IcSearch, IcTick, IcTrash,
+  IcReanalyze, IcSearch, IcTrash,
 } from "./sceneMatchIcons";
 
 // Trang quản lý vụ án — bước đầu của tab Dấu vết hiện trường.
@@ -258,16 +258,6 @@ export default function CasesPage({ role = "user", onPick, onOpenCase }) {
                               title={t("common.edit")}
                             >
                               <IcPencil />
-                            </button>
-                            <button
-                              type="button"
-                              className="smp-icon-btn"
-                              disabled={busy}
-                              onClick={() => closeCase(c)}
-                              aria-label={t("case.act.close", { name })}
-                              title={t("case.act.close_short")}
-                            >
-                              <IcTick />
                             </button>
                             <button
                               type="button"
