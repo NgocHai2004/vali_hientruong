@@ -1,5 +1,5 @@
-import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { usbApi } from "./api";
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api as casesApi, usbApi } from "./api";
 import UsbDrivePickerModal from "./UsbDrivePickerModal";
 import { buildProfilePdfBlob } from "./lib/exportProfilePdf";
 import { useI18n } from "./i18n";
@@ -356,7 +356,7 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
                         crossOrigin="anonymous"
                         alt={`Latent ${pair.trace_code}`}
                       />
-                      <ReportMinutiaeDots dots={pair.latent_dots} color="red" />
+                      <ReportMinutiaeDots dots={pair.latent_dots} color="pink" />
                     </div>
                     <div className="sr-match-label">
                       Ảnh hiện trường: {pair.trace_code}
@@ -378,7 +378,7 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
                         crossOrigin="anonymous"
                         alt={`Reference ${pair.subject}`}
                       />
-                      <ReportMinutiaeDots dots={pair.candidate_dots} color="purple" />
+                      <ReportMinutiaeDots dots={pair.candidate_dots} color="pink" />
                     </div>
                     <div className="sr-match-label">
                       Ảnh đối sánh: {pair.ref_code}
@@ -394,6 +394,7 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
   );
 });
 
+
 // ---------- Modal xem trước nhiều trang + Tải PDF + Lưu USB ----------
 export default function SceneMatchReportModal({
   session,
@@ -404,50 +405,32 @@ export default function SceneMatchReportModal({
   onClose,
 }) {
   const { t } = useI18n();
-  const a4Ref = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [progressText, setProgressText] = useState("Đang khởi tạo tiến trình tạo báo cáo...");
+  const [pdfBlob, setPdfBlob] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [picker, setPicker] = useState({ open: false, drives: [], resolve: null });
+
+  const urlRef = useRef("");
+  const cancelGenerationRef = useRef(null);
+
+  const caseId = session?.id || session?._id || session?.case_id || "";
+  const matchId = singleMatch?.id || singleMatch?._id || null;
 
   const pickDrive = (drives) => new Promise((resolve) => {
     setPicker({ open: true, drives, resolve });
   });
 
-  const downloadPdf = async () => {
-    const node = a4Ref.current;
-    if (!node) return;
+  const handleSaveToUsb = async (blobToSave = null, fname = "") => {
+    const targetBlob = blobToSave || pdfBlob;
+    if (!targetBlob) return;
     setBusy(true);
     setErr("");
     setMsg("");
-    setProgress({ current: 0, total: 0 });
-    try {
-      const blob = await buildProfilePdfBlob(node, (cur, tot) => {
-        setProgress({ current: cur, total: tot });
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = reportFileName(session?.code || singleMatch?.report_code || "2707_11h30");
-      a.click();
-      URL.revokeObjectURL(url);
-      setMsg(t("pdf.download_success") || "Đã tải file PDF thành công!");
-    } catch (ex) {
-      setErr(ex?.message || "Lỗi tải file PDF");
-    } finally {
-      setBusy(false);
-      setProgress({ current: 0, total: 0 });
-    }
-  };
-
-  const saveToUsb = async () => {
-    const node = a4Ref.current;
-    if (!node) return;
-    setBusy(true);
-    setErr("");
-    setMsg("");
-    setProgress({ current: 0, total: 0 });
     try {
       const info = await usbApi.listWritable();
       const drives = info.drives || [];
@@ -460,60 +443,190 @@ export default function SceneMatchReportModal({
       }
       const chosen = drives.length === 1 ? drives[0] : await pickDrive(drives);
       if (!chosen) return;
-      const blob = await buildProfilePdfBlob(node, (cur, tot) => {
-        setProgress({ current: cur, total: tot });
-      });
-      const saved = await usbApi.saveExport(chosen.path, reportFileName(session?.code || singleMatch?.report_code), blob);
+      const targetName = fname || fileName || reportFileName(session?.code || singleMatch?.report_code || "vuan");
+      const saved = await usbApi.saveExport(chosen.path, targetName, targetBlob);
       setMsg(t("usb.export.success", { path: saved?.path || chosen.path }));
     } catch (ex) {
       setErr(ex?.message || t("scene.report.err_export"));
     } finally {
       setBusy(false);
-      setProgress({ current: 0, total: 0 });
     }
   };
 
+  const downloadPdf = () => {
+    if (!pdfBlob || !pdfUrl) return;
+    const a = document.createElement("a");
+    a.href = pdfUrl;
+    a.download = fileName || reportFileName(session?.code || singleMatch?.report_code || "vuan");
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setMsg(t("pdf.download_success") || "Đã tải file PDF thành công!");
+  };
+
+  const startReportGeneration = useCallback((forceRefresh = false) => {
+    cancelGenerationRef.current?.();
+    setLoading(true);
+    setErr("");
+    setMsg("");
+    setProgressText(forceRefresh ? "Đang tạo lại báo cáo mới..." : "Đang chuẩn bị dữ liệu và xuất báo cáo...");
+
+    let isCancelled = false;
+
+    casesApi.generateSceneReport({
+      caseId,
+      scope,
+      matchId,
+    }).then(async (genRes) => {
+      if (isCancelled) return;
+      const reportId = genRes.report_id;
+      if (!reportId) throw new Error("Không nhận được mã báo cáo từ máy chủ");
+
+      let done = false;
+      let attempts = 0;
+      const maxAttempts = 30;
+
+      while (!isCancelled && !done && attempts < maxAttempts) {
+        attempts++;
+        await new Promise((r) => setTimeout(r, 1200));
+        if (isCancelled) break;
+
+        try {
+          const st = await casesApi.getSceneReportStatus(reportId);
+          if (isCancelled) break;
+
+          if (st.status === "completed") {
+            done = true;
+            const fname = st.filename || reportFileName(session?.code || singleMatch?.report_code || "vuan");
+            setFileName(fname);
+            setProgressText("Đang tải dữ liệu PDF hiển thị...");
+
+            const { blob } = await casesApi.fetchSceneReportPdfBlob(reportId, fname);
+            if (isCancelled) return;
+
+            const objUrl = URL.createObjectURL(blob);
+            if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+            urlRef.current = objUrl;
+
+            setPdfBlob(blob);
+            setPdfUrl(objUrl);
+            setLoading(false);
+
+            if (initialAction === "download") {
+              const a = document.createElement("a");
+              a.href = objUrl;
+              a.download = fname;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              setMsg(t("pdf.download_success") || "Đã tải file PDF thành công!");
+            } else if (initialAction === "usb") {
+              handleSaveToUsb(blob, fname);
+            }
+          } else if (st.status === "error") {
+            done = true;
+            setErr(st.error || "Lỗi tạo file PDF từ máy chủ");
+            setLoading(false);
+          } else {
+            setProgressText(st.progress ? `Đang xử lý xuất báo cáo (${st.progress}%)...` : "Đang tạo báo cáo...");
+          }
+        } catch (pollErr) {
+          done = true;
+          if (!isCancelled) {
+            setErr(pollErr?.message || "Lỗi kiểm tra trạng thái báo cáo");
+            setLoading(false);
+          }
+        }
+      }
+
+      if (attempts >= maxAttempts && !done && !isCancelled) {
+        setErr("Quá thời gian chờ tạo báo cáo");
+        setLoading(false);
+      }
+    }).catch((ex) => {
+      if (!isCancelled) {
+        setErr(ex?.message || "Không thể kết nối đến máy chủ xuất báo cáo");
+        setLoading(false);
+      }
+    });
+
+    const cancel = () => { isCancelled = true; };
+    cancelGenerationRef.current = cancel;
+    return cancel;
+  }, [caseId, scope, matchId, initialAction, session, singleMatch, t]);
+
   useEffect(() => {
-    if (initialAction === "download") {
-      const tm = setTimeout(() => {
-        downloadPdf();
-      }, 350);
-      return () => clearTimeout(tm);
-    }
-    if (initialAction === "usb") {
-      const tm = setTimeout(() => {
-        saveToUsb();
-      }, 350);
-      return () => clearTimeout(tm);
-    }
-  }, [initialAction]);
+    const cancelFn = startReportGeneration(false);
+    return () => {
+      if (cancelFn) cancelFn();
+    };
+  }, [startReportGeneration]);
+
+  useEffect(() => () => {
+    cancelGenerationRef.current?.();
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+  }, []);
 
   return (
     <div className="preview-backdrop">
       <div className="preview-toolbar no-print">
-        <button type="button" className="preview-btn" onClick={downloadPdf} disabled={busy}>
-          {busy
-            ? progress.total > 0
-              ? `Đang tạo trang ${progress.current}/${progress.total}...`
-              : (t("scene.report.saving") || "Đang xuất PDF...")
-            : (t("scene.report.pdf") || "Tải PDF")}
+        <button
+          type="button"
+          className="preview-btn"
+          onClick={downloadPdf}
+          disabled={loading || busy || !pdfBlob}
+        >
+          {loading ? "Đang tải PDF..." : (t("scene.report.pdf") || "Tải PDF")}
         </button>
-        <button type="button" className="preview-btn" onClick={saveToUsb} disabled={busy}>
-          {busy
-            ? progress.total > 0
-              ? `Đang tạo trang ${progress.current}/${progress.total}...`
-              : (t("scene.report.saving") || "Đang lưu USB...")
-            : t("scene.report.save_usb")}
+        <button
+          type="button"
+          className="preview-btn"
+          onClick={() => handleSaveToUsb()}
+          disabled={loading || busy || !pdfBlob}
+        >
+          {busy ? "Đang lưu..." : t("scene.report.save_usb")}
         </button>
-        <button type="button" className="preview-btn preview-close" onClick={onClose} disabled={busy}>
+        <button
+          type="button"
+          className="preview-btn preview-close"
+          onClick={onClose}
+          disabled={busy}
+        >
           {t("common.close")}
         </button>
         {msg && <span className="sr-toolbar-ok">{msg}</span>}
         {err && <span className="sr-toolbar-err">{err}</span>}
       </div>
 
-      <div className="preview-scroll">
-        <SceneReportContent ref={a4Ref} session={session} items={items} scope={scope} singleMatch={singleMatch} />
+      <div className="preview-scroll" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        {loading ? (
+          <div className="sr-pdf-loading-box">
+            <div className="sr-pdf-spinner" />
+            <div className="sr-pdf-loading-title">Báo cáo kết quả so sánh kỹ thuật hình sự</div>
+            <div className="sr-pdf-loading-sub">{progressText}</div>
+          </div>
+        ) : err ? (
+          <div className="sr-pdf-error-box">
+            <div style={{ fontSize: "16px", fontWeight: "600" }}>Không thể tạo báo cáo</div>
+            <div style={{ fontSize: "13.5px", color: "#cbd5e1" }}>{err}</div>
+            <button
+              type="button"
+              className="preview-btn"
+              onClick={() => startReportGeneration(true)}
+              style={{ marginTop: "10px" }}
+            >
+              Thử lại
+            </button>
+          </div>
+        ) : pdfUrl ? (
+          <div className="sr-pdf-iframe-container">
+            <iframe
+              src={pdfUrl}
+              className="sr-pdf-iframe"
+              title="Báo cáo kết quả đối sánh"
+            />
+          </div>
+        ) : null}
       </div>
 
       {picker.open && (

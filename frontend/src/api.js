@@ -347,6 +347,14 @@ export const api = {
   // Doi sanh lai TOAN BO dau vet trong vu an
   rematchSceneCase: (caseId) => request(`/api/scene/rematch${caseId ? `?case_id=${encodeURIComponent(caseId)}` : ""}`, { method: "POST" }),
   hbieHealth: () => request("/api/scene/hbie/health"),
+  generateSceneReport: ({ caseId, scope = "all", matchId = null }) =>
+    request("/api/scene/reports/generate", {
+      method: "POST",
+      body: JSON.stringify({ case_id: caseId || null, scope, match_id: matchId }),
+    }),
+  getSceneReportStatus: (reportId) => request(`/api/scene/reports/${reportId}/status`),
+  fetchSceneReportPdfBlob: (reportId, filename) =>
+    fetchExportBlob(`/api/scene/reports/${reportId}/pdf`, filename),
 };
 
 // ============ ZKFinger fingerprint sensor API (python service :8767) ============
