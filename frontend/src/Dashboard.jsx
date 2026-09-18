@@ -81,8 +81,7 @@ const Icon = {
 const NAV_BASE = [
   { key: "dashboard", labelKey: "nav.dashboard", icon: Icon.dashboard },
   { key: "scene_traces", labelKey: "nav.scene_traces", icon: Icon.folder },
-  { key: "detainees", labelKey: "nav.detainees", icon: Icon.folder },
-  { key: "search", labelKey: "nav.search", icon: Icon.search },
+  { key: "detainees", labelKey: "nav.detainees", icon: Icon.file },
   { key: "detainee_history", labelKey: "nav.detainee_history", icon: Icon.log },
   { key: "sync", labelKey: "nav.sync", icon: Icon.sync },
   { key: "logs", labelKey: "nav.logs", icon: Icon.clipboard },
@@ -297,7 +296,6 @@ export default function Dashboard({ username = "admin", role = "user", fullName 
               onEditProfile={editDetainee}
             />
           )}
-          {page === "search" && <SearchPage />}
           {page === "detainee_history" && <DetaineeHistoryPage onEdit={editDetainee} />}
           {page === "sync" && <SyncPage />}
           {page === "logs" && <LogsPage />}
