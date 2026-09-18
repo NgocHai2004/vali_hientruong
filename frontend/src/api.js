@@ -323,6 +323,15 @@ export const api = {
     fd.append("source", source);
     return request("/api/scene/traces", { method: "POST", body: fd });
   },
+  createSceneTracesBatch: async (files, { caseId = "", case_id = "", note = "", source = "upload" } = {}) => {
+    const cid = caseId || case_id || "";
+    const fd = new FormData();
+    Array.from(files || []).forEach((file) => fd.append("files", file));
+    if (cid) fd.append("case_id", cid);
+    if (note) fd.append("note", note);
+    fd.append("source", source);
+    return request("/api/scene/traces/batch", { method: "POST", body: fd });
+  },
   // patch = { note?, trace_type?, collection_source? }. Field khong gui thi backend
   // giu nguyen. Truyen string thay object van chay (chi sua ghi chu) cho caller cu.
   updateSceneTrace: (id, patch) => request(`/api/scene/traces/${id}`, {

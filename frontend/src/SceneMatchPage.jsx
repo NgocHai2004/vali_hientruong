@@ -9,13 +9,16 @@ import { DEMO_ITEMS, SCORE_TOTAL, enrolledUrl } from "./sceneDemo";
 import {
   IcAvatar, IcCaret, IcChevRight, IcChevUp, IcCheckCircle, IcClose, IcExport, IcFilter,
   IcEye, IcPageNext, IcPagePrev, IcPencil, IcPlus,
-  IcReanalyze, IcTick, IcTrash, IcUpload,
+  IcTick, IcTrash, IcUpload,
 } from "./sceneMatchIcons";
 
 // Man "Phan tich doi sanh" — dung theo design D:\Downloads\Phan tich doi sanh.
 // Vu an / ma phien / danh sach dau vet = data THAT tu API.
 // Ket qua doi sanh + ho so doi tuong = data gia (chua co engine trich minutiae).
 const PAGE_SIZE = 10;   // design: "Hien thi 1 - 10 cua 20"
+const MATCH_POLL_MS = 2000;
+const MATCH_POLL_TIMEOUT_MS = 10 * 60 * 1000;
+const MATCH_TERMINAL_STATUSES = new Set(["done", "error", "disabled"]);
 
 // Ten file: backend KHONG luu ten goc luc upload (_save_scene_image doi ten thanh
 // "<timestamp>_<ObjectId>.png"), nen ten hien thi lay tu duoi url. Bo query/hash
@@ -80,7 +83,6 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
   const [uploading, setUploading] = useState(false);
   const [realMatches, setRealMatches] = useState([]);
   const [detainees, setDetainees] = useState([]);
-  const [spinning, setSpinning] = useState(false);   // 1 vong xoay icon moi lan bam "Phan tich lai"
   const [exporting, setExporting] = useState(false);  // icon truot xuong roi ve cho khi bam "Xuat bao cao"
   const [showReport, setShowReport] = useState(false); // mo modal xuat bao cao
   // Dong da bam trong bang KET QUA DOI SANH: giu ca id dau vet + row de trang
@@ -307,7 +309,8 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
     return cmp ? out.sort(cmp) : out;
   }, [traces, traceQ, traceSort]);
 
-  // Import anh hien truong: POST /api/scene/traces (endpoint da co), xong reload.
+  // Import nhieu anh trong 1 request. Backend doi sanh nen; FE polling trang thai
+  // cua dung cac trace vua tao, sau do moi tai lai bang ket qua.
   const addTraces = async (files) => {
     const list = Array.from(files || []);
     if (!list.length) return;
@@ -315,14 +318,38 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
     setErr("");
     try {
       const activeCaseId = currentCaseId || session?.id || session?._id || "";
-      for (const f of list) {
-        await api.createSceneTrace(f, {
-          caseId: activeCaseId,
-          sessionId: activeCaseId,
-          source: "upload",
-        });
+      const batch = await api.createSceneTracesBatch(list, {
+        caseId: activeCaseId,
+        source: "upload",
+      });
+      const traceIds = new Set((batch?.items || []).map((it) => it.id).filter(Boolean));
+      const deadline = Date.now() + MATCH_POLL_TIMEOUT_MS;
+
+      while (traceIds.size > 0) {
+        const traceRes = await api.listSceneTraces(activeCaseId);
+        const caseData = traceRes?.case || traceRes?.session || null;
+        if (caseData) setSession(caseData);
+        setTraces(traceRes?.items || []);
+
+        const tracked = (traceRes?.items || []).filter((it) => traceIds.has(it.id));
+        const finished = tracked.length === traceIds.size
+          && tracked.every((it) => MATCH_TERMINAL_STATUSES.has(it.match_status));
+        if (finished) break;
+        if (Date.now() >= deadline) {
+          throw new Error(t("scene.err.match_timeout") || "Đối sánh đang mất nhiều thời gian. Kết quả sẽ tiếp tục được xử lý ở nền.");
+        }
+        await new Promise((resolve) => setTimeout(resolve, MATCH_POLL_MS));
       }
-      await load();
+
+      if (traceIds.size > 0) {
+        const matchRes = await api.listSceneMatches({ caseId: activeCaseId });
+        setRealMatches(matchRes?.items || []);
+      }
+
+      if ((batch?.errors || []).length > 0) {
+        const detail = batch.errors.map((x) => `${x.filename}: ${x.error}`).join("; ");
+        setErr(`${batch.accepted}/${batch.total} ảnh được tải lên. ${detail}`);
+      }
     } catch (ex) {
       setErr(ex.message || t("scene.err.upload"));
     } finally {
@@ -356,22 +383,6 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
       setErr(ex.message || t("scene.err.save_note"));
     }
   };
-
-  // Phan tich lai toan bo dau vet cua vu an
-  const handleReanalyze = async () => {
-    setSpinning(true);
-    setErr("");
-    try {
-      const activeCaseId = currentCaseId || session?.id || session?._id || "";
-      await api.rematchSceneCase(activeCaseId);
-      await load();
-    } catch (ex) {
-      setErr(ex.message || t("scene.err.rematch") || "Lỗi khi phân tích lại đối sánh");
-    } finally {
-      setTimeout(() => setSpinning(false), 800);
-    }
-  };
-
 
   const [closingCase, setClosingCase] = useState(false);
   const isCaseClosed = session?.status === "closed";
@@ -469,21 +480,6 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           </div>
         </div>
         <div className="smp-top-actions">
-          <button
-            type="button"
-            className="smp-btn-ghost"
-            disabled={spinning || isCaseClosed}
-            onClick={handleReanalyze}
-            title={t("smp.reanalyze")}
-          >
-            {/* onAnimationEnd de tren span, KHONG tren button: button co animation
-                btn-sweep tren ::after luc hover, event do bubble len button va se
-                tat spin som. */}
-            <span className={"smp-ic" + (spinning ? " smp-ic-spin" : "")} onAnimationEnd={() => setSpinning(false)}>
-              <IcReanalyze />
-            </span>
-            {spinning ? (t("scene.analyzing") || "Đang phân tích...") : t("smp.reanalyze")}
-          </button>
           <button
             type="button"
             className="smp-btn-ghost"
@@ -1003,7 +999,7 @@ function SceneTracePanel({
             {uploading ? t("scene.uploading") : t("smp.trace.import")}
             <input
               type="file"
-              accept="image/*,.jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff"
+              accept=".jpg,.jpeg,.png,.webp"
               multiple
               hidden
               disabled={uploading}

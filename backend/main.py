@@ -2544,6 +2544,11 @@ async def _insert_scene_trace(
         "captured_at": captured_at or now,
         "created_at": now,
         "created_by": created_by,
+        # FE polling field nay sau khi upload. Khi HBIE bi tat, danh dau terminal
+        # ngay de client khong cho vo han o trang thai "queued".
+        "match_status": "queued" if hbie_service.FEATURE_HBIE_MATCH else "disabled",
+        "match_error": "",
+        "match_count": 0,
         # Để sẵn cho tính năng matching sau này, chưa tính lúc upload.
         "face_embedding": None,
         "face_count": None,
@@ -2707,6 +2712,73 @@ async def create_scene_trace(
     # phải chờ upload xong mới thấy ảnh hiện lên.
     _spawn_match(doc, case_doc)
     return _s_scene(doc)
+
+
+@app.post("/api/scene/traces/batch", status_code=status.HTTP_202_ACCEPTED)
+async def create_scene_traces_batch(
+    request: Request,
+    files: List[UploadFile] = File(...),
+    case_id: Optional[str] = Form(default=None),
+    note: str = Form(default=""),
+    source: str = Form(default="upload"),
+    user: dict = Depends(get_current_user),
+):
+    """Nhan nhieu anh trong mot request, luu tung anh va xep hang doi sanh nen.
+
+    Moi file duoc xu ly doc lap: mot file hong khong rollback cac file da hop le.
+    FE dung id tra ve de polling match_status qua GET /api/scene/traces.
+    """
+    if not files:
+        raise HTTPException(400, "Cần chọn ít nhất một ảnh dấu vết.")
+
+    case_doc = await _scene_case_or_400(case_id)
+    _ensure_case_editable(case_doc)
+    batch_id = str(ObjectId())
+    accepted = []
+    rejected = []
+
+    for file in files:
+        filename = file.filename or "image"
+        url = ""
+        try:
+            data = await file.read()
+            ext = os.path.splitext(filename)[1].lower() or ".jpg"
+            url, _ = await _save_scene_image(data, ext)
+            try:
+                doc = await _insert_scene_trace(
+                    case_doc, url, len(data), ext,
+                    source="camera" if source == "camera" else "upload",
+                    note=note, created_by=user["username"],
+                )
+            except Exception:
+                _delete_scene_file(url)
+                raise
+
+            await _log(
+                request, user, "create", "scene_trace", f"#{doc['seq']}",
+                data={"batch_id": batch_id, "filename": filename},
+                ref_id=str(doc["_id"]), case_id=case_doc["_id"],
+            )
+            _spawn_match(doc, case_doc)
+            item = _s_scene(doc)
+            item["filename"] = filename
+            accepted.append(item)
+        except HTTPException as ex:
+            rejected.append({"filename": filename, "error": str(ex.detail)})
+        except Exception:
+            rejected.append({"filename": filename, "error": "Không thể lưu ảnh dấu vết."})
+        finally:
+            await file.close()
+
+    return {
+        "batch_id": batch_id,
+        "status": "queued" if accepted else "rejected",
+        "total": len(files),
+        "accepted": len(accepted),
+        "rejected": len(rejected),
+        "items": accepted,
+        "errors": rejected,
+    }
 
 
 class SceneTracePatch(BaseModel):

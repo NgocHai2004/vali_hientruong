@@ -1029,6 +1029,7 @@
   "scene.err.load": "Could not load the crime-scene traces.",
   "scene.err.save_note": "Could not save the note.",
   "scene.err.upload": "Could not upload the image.",
+  "scene.err.match_timeout": "Matching is taking longer than expected. Processing will continue in the background.",
   "scene.file.dl": "Download",
   "scene.file.g_dots": "Feature-processed image",
   "scene.file.g_raw": "Original image",

@@ -1029,6 +1029,7 @@
   "scene.err.load": "Không tải được danh sách dấu vết hiện trường.",
   "scene.err.save_note": "Không lưu được ghi chú.",
   "scene.err.upload": "Không tải được ảnh lên.",
+  "scene.err.match_timeout": "Đối sánh đang mất nhiều thời gian. Kết quả sẽ tiếp tục được xử lý ở nền.",
   "scene.file.dl": "Tải",
   "scene.file.g_dots": "Ảnh đã xử lý đặc trưng",
   "scene.file.g_raw": "Ảnh gốc",
