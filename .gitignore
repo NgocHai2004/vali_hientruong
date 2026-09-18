@@ -46,7 +46,7 @@ mongo_portable/
 backend/*.log
 backend/*.log.*
 backend/uvicorn.*.log
-backend/uploads/reports/*.pdf
+backend/uploads/
 
 # ===== Frontend runtime =====
 frontend/*.log
