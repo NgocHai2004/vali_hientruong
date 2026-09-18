@@ -4,8 +4,8 @@ import { api } from "./api";
 import { useI18n } from "./i18n";
 import SceneTraceFull from "./SceneTraceFull";
 import SceneMatchReportModal from "./SceneMatchReportModal";
-import { MATCH_ROWS, SUBJECTS, FINGER_LABELS, FINGERS, FINGER_KEYS } from "./sceneMatchDemo";
-import { DEMO_ITEMS, SCORE_TOTAL, enrolledUrl } from "./sceneDemo";
+import { FINGER_LABELS } from "./sceneMatchDemo";
+import { SCORE_TOTAL, enrolledUrl } from "./sceneDemo";
 import {
   IcAvatar, IcCaret, IcChevRight, IcChevUp, IcCheckCircle, IcClose, IcExport, IcFilter,
   IcEye, IcPageNext, IcPagePrev, IcPencil, IcPlus,
@@ -78,7 +78,9 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
   const [traceQ, setTraceQ] = useState("");
   const [traceSort, setTraceSort] = useState("newest");
   const [editTrace, setEditTrace] = useState(null);   // != null => mo modal sua
-  const [delTrace, setDelTrace] = useState(null);     // != null => mo popup xac nhan xoa
+  const [pendingDelete, setPendingDelete] = useState([]); // danh sach dau vet cho xac nhan xoa
+  const [pendingDeleteSubject, setPendingDeleteSubject] = useState(null);
+  const [deletingSubjectId, setDeletingSubjectId] = useState("");
   const [openSub, setOpenSub] = useState("");
   const [uploading, setUploading] = useState(false);
   const [realMatches, setRealMatches] = useState([]);
@@ -161,65 +163,37 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
   }, [detainees]);
 
   const baseRows = useMemo(() => {
-    let list = [];
-    if (realMatches.length > 0) {
-      list = realMatches.map((m, idx) => {
-        const fingerKey = m.finger_code || m.finger;
-        const fingerI18n = fingerKey ? (String(fingerKey).startsWith("fp.") ? fingerKey : `fp.finger.${fingerKey}.long`) : "fp.finger.right_index.long";
-        return {
-          id: m.id || m._id || `match-${idx + 1}`,
-          stt: String(idx + 1).padStart(2, "0"),
-          code: m.trace_code || `DVHT-${String(m.trace_seq || idx + 1).padStart(4, "0")}`,
-          name: m.name || m.detainee_name || m.subject || "Nguyễn Ngọc Hải",
-          cccd: m.cccd || m.detainee_code || "026204004933",
-          finger: fingerI18n,
-          score: m.score != null ? (m.score <= 100 && m.score > 1 ? Math.round(m.score * 10) : Math.round(m.score)) : 820,
-          pct: m.percent ? `(${m.percent}%)` : (m.score != null ? `(${((m.score > 100 ? m.score / 1000 : m.score / 100) * 100).toFixed(1)}%)` : "(82.0%)"),
-          time: m.analyzed_at || m.time || m.created_at || "—",
-          latent_landmarks: m.latent_landmarks,
-          latent_dim: m.latent_dim,
-          trace_url: m.trace_url,
-          candidate_url: m.candidate_url,
-          candidate_landmarks: m.candidate_landmarks,
-          candidate_dim: m.candidate_dim,
-          verdict: m.verdict,
-          trace_id: m.trace_id,
-          detainee_id: m.detainee_id || m.suspect_id || "",
-          portrait_url: m.portrait || m.portrait_cropped_url || m.portrait_original_url || m.photos?.portrait_front || m.photos?.portrait_cropped || m.photo || "",
-          raw: m,
-        };
-      });
-    } else if (traces.length > 0) {
-      list = traces.map((tItem, idx) => {
-        const sub = (subjectsList && subjectsList.length > 0)
-          ? subjectsList[idx % subjectsList.length]
-          : (SUBJECTS[0] || { name: "Nguyễn Ngọc Hải", cccd: "026204004933" });
-        const fKey = FINGER_KEYS[idx % FINGER_KEYS.length];
-        const score = 880 - Math.floor((idx * 180) / Math.max(1, traces.length - 1));
-        const pct = ((score / SCORE_TOTAL) * 100).toFixed(1);
-        const h = 9 + Math.floor(idx / 4);
-        const m = (idx * 17) % 60;
-        return {
-          id: `trace-match-${tItem.id || idx + 1}`,
-          stt: String(idx + 1).padStart(2, "0"),
-          code: traceCode(tItem),
-          name: sub.name,
-          cccd: sub.cccd,
-          finger: FINGERS[idx % FINGERS.length],
-          score,
-          pct: `(${pct}%)`,
-          time: tItem.captured_at ? formatDateTime(tItem.captured_at) : `16/09/2026 ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
-          trace_id: tItem.id,
-          trace_url: tItem.url,
-          candidate_url: sub.right?.[idx % 5]?.url || enrolledUrl(idx + 1),
-          verdict: "match",
-          detainee_id: sub.id || "",
-          portrait_url: sub.photo || "",
-        };
-      });
-    } else {
-      list = MATCH_ROWS;
-    }
+    const list = realMatches.map((m, idx) => {
+      const fingerKey = m.finger_code || m.finger;
+      const fingerI18n = fingerKey
+        ? (String(fingerKey).startsWith("fp.") ? fingerKey : `fp.finger.${fingerKey}.long`)
+        : "—";
+      const trace = traces.find((item) => item.id === m.trace_id);
+      const score = Number.isFinite(Number(m.score)) ? Math.round(Number(m.score)) : 0;
+      const percent = m.percent != null ? Number(m.percent) : score / 10;
+      return {
+        id: m.id || m._id || `match-${idx + 1}`,
+        stt: String(idx + 1).padStart(2, "0"),
+        code: m.trace_code || (trace ? traceCode(trace) : `DVHT-${String(m.trace_seq || idx + 1).padStart(4, "0")}`),
+        name: m.name || m.detainee_name || m.subject || "—",
+        cccd: m.cccd || m.detainee_code || "—",
+        finger: fingerI18n,
+        score,
+        pct: `(${percent.toFixed(1)}%)`,
+        time: m.analyzed_at || m.time || m.created_at || "—",
+        latent_landmarks: m.latent_landmarks,
+        latent_dim: m.latent_dim,
+        trace_url: m.trace_url || trace?.url || "",
+        candidate_url: m.candidate_url || "",
+        candidate_landmarks: m.candidate_landmarks,
+        candidate_dim: m.candidate_dim,
+        verdict: m.verdict,
+        trace_id: m.trace_id,
+        detainee_id: m.detainee_id || m.suspect_id || "",
+        portrait_url: m.portrait || m.portrait_cropped_url || m.portrait_original_url || m.photos?.portrait_front || m.photos?.portrait_cropped || m.photo || "",
+        raw: m,
+      };
+    });
 
     if (bestOnly) {
       const bestMap = new Map();
@@ -234,7 +208,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
     }
 
     return list;
-  }, [realMatches, traces, subjectsList, formatDateTime, bestOnly]);
+  }, [realMatches, traces, bestOnly]);
 
   // ----- Ket qua doi sanh: chi co khi phien da co dau vet hien truong -----
   const rows = useMemo(() => {
@@ -247,7 +221,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
       if (!kw) return true;
       return `${r.code} ${r.name}`.toLowerCase().includes(kw);
     });
-    // filter() da tra array moi nen sort() tai cho khong dung vao MATCH_ROWS.
+    // filter() tra array moi nen sort() tai cho khong thay doi du lieu API goc.
     const cmp = {
       newest:     (a, b) => timeKey(b) - timeKey(a),
       oldest:     (a, b) => timeKey(a) - timeKey(b),
@@ -358,9 +332,9 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
   };
 
   // Xoa / sua ghi chu: dung lai api co san, confirm+prompt native nhu DataCapturePage.
-  const delTraces = async (items) => {
+  const deleteTraces = async (items) => {
     if (!items.length) return;
-    setDelTrace(null);
+    setPendingDelete([]);
     setUploading(true);
     setErr("");
     try {
@@ -370,6 +344,23 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
       setErr(ex.message || t("scene.err.delete"));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const deleteSubject = async (subject) => {
+    const detainee = subject?.detainee || subject;
+    if (!detainee?.id) return;
+    setPendingDeleteSubject(null);
+    setDeletingSubjectId(detainee.id);
+    setErr("");
+    try {
+      await api.deleteDetainee(detainee.id);
+      setOpenSub((current) => (current === subject.id ? "" : current));
+      await load();
+    } catch (ex) {
+      setErr(ex.message || t("smp.sub.delete_error"));
+    } finally {
+      setDeletingSubjectId("");
     }
   };
 
@@ -423,24 +414,13 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
   const from = rows.length ? (page - 1) * PAGE_SIZE + 1 : 0;
   const to = Math.min(page * PAGE_SIZE, rows.length);
 
-  // Ket qua doi sanh la data gia nen chua co FK sang dau vet that -> gan theo
-  // thu tu (index tuyet doi trong rows) cho anh va link chi tiet luon khop nhau.
-  // Bo ham nay khi backend tra trace_id trong ket qua doi sanh.
-  //
-  // Phien chua co dau vet that => dung DEMO_ITEMS (giong SceneTracesPage) de anh
-  // va link chi tiet van hoat dong. Neu de null thi anh hong + hang khong bam
-  // duoc, khong xem duoc man Chi tiet doi sanh.
-  const matchTraces = traces.length ? traces : DEMO_ITEMS;
-  const traceFor = (absIdx) => {
-    const r = rows[absIdx];
-    if (r?.trace_id) {
-      const found = traces.find((t) => t.id === r.trace_id);
-      if (found) return found;
-    }
-    return matchTraces[absIdx % matchTraces.length];
-  };
+  // Chỉ liên kết bằng trace_id thật do backend trả về. Không ghép theo thứ tự,
+  // vì cách đó khiến ảnh chưa có kết quả HBIE vẫn bị hiển thị như đã trùng khớp.
+  const traceFor = (row) => row?.trace_id
+    ? traces.find((trace) => trace.id === row.trace_id)
+    : null;
 
-  const fullItem = full ? (traces.find((x) => x.id === full.id) || matchTraces.find((x) => x.id === full.id)) : null;
+  const fullItem = full ? traces.find((x) => x.id === full.id) : null;
   if (fullItem) {
     return (
         <SceneTraceFull
@@ -524,7 +504,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           formatDateTime={formatDateTime}
           onAddFiles={addTraces}
           uploading={uploading}
-          onDelete={(items) => setDelTrace(items[0] || null)}
+          onDelete={setPendingDelete}
           onEdit={setEditTrace}
           sort={traceSort}
           setSort={setTraceSort}
@@ -535,6 +515,8 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           openSub={openSub || ""}
           setOpenSub={setOpenSub}
           onOpenDetainee={onOpenDetainee}
+          onDelete={setPendingDeleteSubject}
+          deletingId={deletingSubjectId}
           // ponytail: chi chan theo status (co trong payload san). Backend con chan
           // officer != user va role admin -> se bao 403 luc luu. Them officer vao
           onAdd={onAddSubject && (!session || session.status === "open" || session.status === "investigating" || session.status === "active" || session.status !== "closed")
@@ -583,7 +565,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
                 {t("smp.all_subjects")}
                 {subjectSel.size === 0 && <IcTick />}
               </button>
-              {SUBJECTS.map((sub) => (
+              {subjectsList.map((sub) => (
                 <button
                   type="button"
                   key={sub.id}
@@ -729,7 +711,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           )}
           {!loading && pageRows.map((r, i) => {
             const globalIdx = (page - 1) * PAGE_SIZE + i;
-            const it = traceFor(globalIdx);
+            const it = traceFor(r);
             const open = it ? () => setFull({ id: it.id, row: r }) : undefined;
             const sttNumber = String(globalIdx + 1).padStart(2, "0");
             const rowKey = r.id || r.raw?.id || r.raw?._id || `${r.code || "row"}-${r.finger || ""}-${globalIdx}`;
@@ -811,33 +793,70 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
         />
       )}
 
-      {delTrace && (
+      {pendingDelete.length > 0 && (
         <div
           className="smp-modal-bd"
-          onMouseDown={(e) => e.target === e.currentTarget && setDelTrace(null)}
+          onMouseDown={(e) => e.target === e.currentTarget && setPendingDelete([])}
         >
           <div className="smp-modal smp-modal-sm" role="dialog" aria-modal="true">
             <div className="smp-modal-head">
-              <span className="smp-modal-title">{t("scene.del.title")}</span>
+              <span className="smp-modal-title">
+                {t(pendingDelete.length > 1 ? "scene.del.title_multi" : "scene.del.title")}
+              </span>
               <button
                 type="button"
                 className="smp-adv-x"
                 aria-label={t("common.close")}
-                onClick={() => setDelTrace(null)}
+                onClick={() => setPendingDelete([])}
               ><IcClose s={17} /></button>
             </div>
             <div className="smp-modal-msg">
-              {t("scene.del.body", { n: traceCode(delTrace) })}
+              {pendingDelete.length === 1
+                ? t("scene.del.body", { n: traceCode(pendingDelete[0]) })
+                : t("scene.del.body_multi", { n: pendingDelete.length })}
             </div>
             <div className="smp-modal-foot">
-              <button type="button" className="smp-modal-cancel" onClick={() => setDelTrace(null)}>
+              <button type="button" className="smp-modal-cancel" onClick={() => setPendingDelete([])}>
                 {t("common.cancel")}
               </button>
               <button
                 type="button"
                 className="smp-modal-del"
                 disabled={uploading}
-                onClick={() => delTraces([delTrace])}
+                onClick={() => deleteTraces(pendingDelete)}
+              >{t("common.delete")}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingDeleteSubject && (
+        <div
+          className="smp-modal-bd"
+          onMouseDown={(e) => e.target === e.currentTarget && setPendingDeleteSubject(null)}
+        >
+          <div className="smp-modal smp-modal-sm" role="dialog" aria-modal="true">
+            <div className="smp-modal-head">
+              <span className="smp-modal-title">{t("smp.sub.delete_title")}</span>
+              <button
+                type="button"
+                className="smp-adv-x"
+                aria-label={t("common.close")}
+                onClick={() => setPendingDeleteSubject(null)}
+              ><IcClose s={17} /></button>
+            </div>
+            <div className="smp-modal-msg">
+              {t("smp.sub.del_confirm", { name: pendingDeleteSubject.name })}
+            </div>
+            <div className="smp-modal-foot">
+              <button type="button" className="smp-modal-cancel" onClick={() => setPendingDeleteSubject(null)}>
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                className="smp-modal-del"
+                disabled={Boolean(deletingSubjectId)}
+                onClick={() => deleteSubject(pendingDeleteSubject)}
               >{t("common.delete")}</button>
             </div>
           </div>
@@ -924,7 +943,25 @@ function SceneTracePanel({
   onAddFiles, uploading, onDelete, onEdit, sort, setSort,
 }) {
   const [zoom, setZoom] = useState(null);
-  // Design: 3 nut Xem / Chinh sua / Xoa ngay tren the, thay cho menu "...".
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const selectedItems = traces.filter((it) => selectedIds.has(it.id));
+
+  useEffect(() => {
+    const visibleIds = new Set(traces.map((it) => it.id));
+    setSelectedIds((current) => {
+      const next = new Set([...current].filter((id) => visibleIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [traces]);
+
+  const toggleOne = (id) => setSelectedIds((current) => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
+
+  // Xem / Chinh sua nam tren tung dong; xoa dung nut hang loat tren thanh cong cu.
   const actions = (it, grid) => (
     <div className={"smp-act" + (grid ? " smp-act-grid" : "")} onClick={(e) => e.stopPropagation()}>
       <button
@@ -994,6 +1031,20 @@ function SceneTracePanel({
               </button>
             ))}
           </PopMenu>
+          <button
+            type="button"
+            className="smp-bulk-del"
+            disabled={uploading || selectedItems.length === 0}
+            onClick={() => onDelete(selectedItems)}
+            title={selectedItems.length > 0
+              ? t("scene.del.selected", { n: selectedItems.length })
+              : t("scene.del.select_first")}
+            aria-label={selectedItems.length > 0
+              ? t("scene.del.selected", { n: selectedItems.length })
+              : t("scene.del.select_first")}
+          >
+            <IcTrash s={15} />
+          </button>
           <label className="smp-btn-primary">
             <IcUpload />
             {uploading ? t("scene.uploading") : t("smp.trace.import")}
@@ -1017,7 +1068,24 @@ function SceneTracePanel({
             <div
               key={it.id}
               className="smp-tr-row"
+              role="button"
+              tabIndex={0}
+              aria-pressed={selectedIds.has(it.id)}
+              aria-label={t("scene.select_trace", { code: traceCode(it) })}
+              onClick={() => toggleOne(it.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleOne(it.id);
+                }
+              }}
             >
+              <span
+                className={"smp-tr-selected-mark" + (selectedIds.has(it.id) ? " visible" : "")}
+                aria-hidden="true"
+              >
+                <IcTick s={16} />
+              </span>
               <img
                 className="smp-thumb-md"
                 src={it.url}
@@ -1153,7 +1221,7 @@ function TraceEditModal({ t, item, code, onClose, onSave }) {
 
 /* ---------- Panel: HỒ SƠ ĐỐI TƯỢNG (data giả) ---------- */
 function SubjectPanel({
-  t, subjects, openSub, setOpenSub, onOpenDetainee, onAdd, addDisabledHint,
+  t, subjects, openSub, setOpenSub, onOpenDetainee, onDelete, deletingId, onAdd, addDisabledHint,
 }) {
   const total = subjects.length;
   const photos = subjects.reduce((n, s) => n + s.photoCount, 0);
@@ -1228,12 +1296,22 @@ function SubjectPanel({
                     </div>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  className="smp-sub-toggle"
-                  onClick={() => setOpenSub("")}
-                  aria-label={t("smp.sub.collapse")}
-                ><IcChevUp /></button>
+                <div className="smp-sub-open-actions">
+                  <button
+                    type="button"
+                    className="smp-sub-delete"
+                    disabled={deletingId === s.id}
+                    onClick={() => onDelete(s)}
+                    aria-label={t("common.delete")}
+                    title={t("common.delete")}
+                  ><IcTrash s={15} /></button>
+                  <button
+                    type="button"
+                    className="smp-sub-toggle"
+                    onClick={() => setOpenSub("")}
+                    aria-label={t("smp.sub.collapse")}
+                  ><IcChevUp /></button>
+                </div>
               </div>
             ) : (
               <div className="smp-sub-row" key={s.id} onClick={() => setOpenSub(s.id)}>
@@ -1246,7 +1324,18 @@ function SubjectPanel({
                     <div className="smp-dim">CCCD: {s.cccd}</div>
                   </div>
                 </div>
-                <div className="smp-sub-row-right"><span className="smp-dim2">{t("smp.sub.photos", { n: s.photoCount })}</span><IcChevRight /></div>
+                <div className="smp-sub-row-right">
+                  <span className="smp-dim2">{t("smp.sub.photos", { n: s.photoCount })}</span>
+                  <button
+                    type="button"
+                    className="smp-sub-delete"
+                    disabled={deletingId === s.id}
+                    onClick={(e) => { e.stopPropagation(); onDelete(s); }}
+                    aria-label={t("common.delete")}
+                    title={t("common.delete")}
+                  ><IcTrash s={15} /></button>
+                  <IcChevRight />
+                </div>
               </div>
             );
           })
