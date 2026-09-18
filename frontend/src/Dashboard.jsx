@@ -1240,6 +1240,7 @@ function DetaineesPage({ onEdit }) {
   const { t, formatDate } = useI18n();
   const [items, setItems] = useState([]);
   const [cells, setCells] = useState([]);
+  const [cases, setCases] = useState([]);
   const [total, setTotal] = useState(0);
   const [skip, setSkip] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -1248,17 +1249,30 @@ function DetaineesPage({ onEdit }) {
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
 
+  const [q, setQ] = useState("");
+  const [gender, setGender] = useState("");
+  const [caseId, setCaseId] = useState("");
+
   const limit = 10;
 
-  const load = async () => {
+  const load = async (override = {}) => {
     setLoading(true);
     setError("");
 
     try {
+      const currentSkip = override.skip !== undefined ? override.skip : skip;
+      const currentQ = override.q !== undefined ? override.q : q;
+      const currentGender = override.gender !== undefined ? override.gender : gender;
+      const currentCaseId = override.caseId !== undefined ? override.caseId : caseId;
+
       const params = new URLSearchParams({
-        skip: String(skip),
+        skip: String(currentSkip),
         limit: String(limit),
       });
+      if (currentQ.trim()) params.set("q", currentQ.trim());
+      if (currentGender) params.set("gender", currentGender);
+      if (currentCaseId) params.set("case_id", currentCaseId);
+
       const result = await api.request(`/api/detainees?${params}`);
       setItems(result.items || []);
       setTotal(result.total || 0);
@@ -1271,11 +1285,21 @@ function DetaineesPage({ onEdit }) {
 
   useEffect(() => {
     api.listCells().then(setCells).catch(() => { });
+    api.listCases({ limit: 200 }).then((r) => setCases(r.items || [])).catch(() => { });
   }, []);
 
   useEffect(() => {
     load();
-  }, [skip]);
+  }, [skip, gender, caseId]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (skip !== 0) {
+      setSkip(0);
+    } else {
+      load({ skip: 0 });
+    }
+  };
 
   const deleteItem = async (item) => {
     if (!window.confirm(t("detainee.confirm.delete", { code: item.code, name: item.full_name }))) return;
@@ -1296,6 +1320,45 @@ function DetaineesPage({ onEdit }) {
       <PageHeader title={t("detainee.list.title")} subtitle={t("detainee.list.total", { n: total })}>
       </PageHeader>
 
+      <form className="filter-bar" onSubmit={handleSearchSubmit}>
+        <input
+          className="control search-control"
+          placeholder={t("search.ph.text")}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        <select
+          className="control"
+          value={caseId}
+          onChange={(e) => {
+            setCaseId(e.target.value);
+            setSkip(0);
+          }}
+        >
+          <option value="">{t("detainee.filter.case_all")}</option>
+          {cases.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name || c.code || c.id}
+            </option>
+          ))}
+        </select>
+        <select
+          className="control"
+          value={gender}
+          onChange={(e) => {
+            setGender(e.target.value);
+            setSkip(0);
+          }}
+        >
+          <option value="">{t("search.gender.all")}</option>
+          <option value="male">{t("search.gender.male")}</option>
+          <option value="female">{t("search.gender.female")}</option>
+        </select>
+        <button className="button primary" type="submit" disabled={loading}>
+          {loading ? t("common.loading") : t("search.submit")}
+        </button>
+      </form>
+
       <div className="detainees-table-wrap">
         <div className="detainees-table-scroll">
           {loading ? (
@@ -1311,11 +1374,12 @@ function DetaineesPage({ onEdit }) {
                 <tr>
                   <th>{t("detainee.col.photo")}</th>
                   <th>{t("detainee.col.code")}</th>
+                  <th>{t("detainee.col.charge")}</th>
                   <th>{t("detainee.col.name")}</th>
                   <th>{t("detainee.col.gender")}</th>
                   <th>{t("detainee.col.dob")}</th>
                   <th>{t("detainee.col.cccd")}</th>
-                  <th>{t("detainee.col.actions")}</th>
+                  <th style={{ textAlign: "center" }}>{t("detainee.col.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1331,12 +1395,13 @@ function DetaineesPage({ onEdit }) {
                       </div>
                     </td>
                     <td><strong>{item.personal_id || item.code}</strong></td>
+                    <td>{item.charge || "-"}</td>
                     <td>{item.full_name}</td>
                     <td>{item.gender === "female" ? t("common.female") : t("common.male")}</td>
                     <td>{item.dob ? formatDate(item.dob) : "-"}</td>
                     <td>{item.cccd_number || "-"}</td>
                     <td>
-                      <div className="row-actions">
+                      <div className="row-actions" style={{ justifyContent: "center" }}>
                         <button onClick={() => setViewing(item)}>{t("detainee.action.view")}</button>
                         <button
                           onClick={async () => {
@@ -2146,151 +2211,151 @@ function LogsPage() {
   return (
     <div className="page report-page">
       <div className="report-fixed">
-      <PageHeader
-        title={t("logs.title_sync")}
-        subtitle={t("logs.subtitle_sync", { n: logs.length })}
-      >
-        <button className="button secondary" onClick={load} disabled={loading}>
-          {Icon.refresh}
-          {loading ? t("common.loading") : t("common.refresh")}
-        </button>
-      </PageHeader>
+        <PageHeader
+          title={t("logs.title_sync")}
+          subtitle={t("logs.subtitle_sync", { n: logs.length })}
+        >
+          <button className="button secondary" onClick={load} disabled={loading}>
+            {Icon.refresh}
+            {loading ? t("common.loading") : t("common.refresh")}
+          </button>
+        </PageHeader>
 
-      <div className="report-stat-grid">
-        <ReportStat tone="orange" icon={Icon.sync} label={t("logs.stat.sync_total")} value={counts.sync || 0} note={t("logs.stat.note.sync")} />
-      </div>
-
-      <form
-        className="report-filter"
-        onSubmit={(e) => { e.preventDefault(); load(); }}
-      >
-        <div className="report-filter-head">
-          <span className="report-filter-title">{t("logs.filter.title")}</span>
-          <span className="report-filter-hint">{t("logs.filter.desc")}</span>
+        <div className="report-stat-grid">
+          <ReportStat tone="orange" icon={Icon.sync} label={t("logs.stat.sync_total")} value={counts.sync || 0} note={t("logs.stat.note.sync")} />
         </div>
-        <div className="report-filter-grid">
-          <label className="report-field">
-            <span>{t("common.from")}</span>
-            <input
-              className="control"
-              type="datetime-local"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
-          </label>
-          <label className="report-field">
-            <span>{t("common.to")}</span>
-            <input
-              className="control"
-              type="datetime-local"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </label>
-          <label className="report-field">
-            <span>{t("logs.field.case")}</span>
-            <input
-              className="control"
-              type="text"
-              placeholder={t("logs.field.case_ph")}
-              value={caseFilter}
-              onChange={(e) => setCaseFilter(e.target.value)}
-            />
-          </label>
-          <label className="report-field">
-            <span>{t("logs.field.officer")}</span>
-            <select className="control" value={actorFilter} onChange={(e) => setActorFilter(e.target.value)}>
-              <option value="">{t("logs.field.officer_all")}</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.username}>
-                  {u.full_name ? `${u.full_name} (@${u.username})` : u.username}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="report-filter-actions report-filter-actions-inline">
-            <button type="button" className="button secondary" onClick={clearFilters}>{t("common.clear_filter")}</button>
-            <button type="submit" className="button primary" disabled={loading}>
-              {loading ? t("common.applying") : t("common.apply")}
-            </button>
+
+        <form
+          className="report-filter"
+          onSubmit={(e) => { e.preventDefault(); load(); }}
+        >
+          <div className="report-filter-head">
+            <span className="report-filter-title">{t("logs.filter.title")}</span>
+            <span className="report-filter-hint">{t("logs.filter.desc")}</span>
           </div>
-        </div>
-      </form>
+          <div className="report-filter-grid">
+            <label className="report-field">
+              <span>{t("common.from")}</span>
+              <input
+                className="control"
+                type="datetime-local"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </label>
+            <label className="report-field">
+              <span>{t("common.to")}</span>
+              <input
+                className="control"
+                type="datetime-local"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </label>
+            <label className="report-field">
+              <span>{t("logs.field.case")}</span>
+              <input
+                className="control"
+                type="text"
+                placeholder={t("logs.field.case_ph")}
+                value={caseFilter}
+                onChange={(e) => setCaseFilter(e.target.value)}
+              />
+            </label>
+            <label className="report-field">
+              <span>{t("logs.field.officer")}</span>
+              <select className="control" value={actorFilter} onChange={(e) => setActorFilter(e.target.value)}>
+                <option value="">{t("logs.field.officer_all")}</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.username}>
+                    {u.full_name ? `${u.full_name} (@${u.username})` : u.username}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="report-filter-actions report-filter-actions-inline">
+              <button type="button" className="button secondary" onClick={clearFilters}>{t("common.clear_filter")}</button>
+              <button type="submit" className="button primary" disabled={loading}>
+                {loading ? t("common.applying") : t("common.apply")}
+              </button>
+            </div>
+          </div>
+        </form>
 
-      {error && <StateBox type="error">{error}</StateBox>}
-      {notice && <div className={noticeOk ? "success-box" : "error-box"}>{notice}</div>}
+        {error && <StateBox type="error">{error}</StateBox>}
+        {notice && <div className={noticeOk ? "success-box" : "error-box"}>{notice}</div>}
       </div>
 
       <div className="report-scroll">
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th style={{ width: "18%" }}>{t("logs.col.time")}</th>
-              <th style={{ width: "16%" }}>{t("logs.col.case")}</th>
-              <th style={{ width: "22%" }}>{t("logs.col.officer")}</th>
-              <th style={{ width: "32%" }}>{t("logs.sync.result")}</th>
-              <th style={{ width: "12%" }}>{t("logs.col.actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.map((log) => {
-              const busy = busyRef === log.id;
-              const officer = log.officer || {};
-              const initials = ((officer.full_name || officer.username || log.actor || "?").trim()[0] || "?").toUpperCase();
-              const d = log.data || {};
-              return (
-                <tr key={log.id}>
-                  <td>{formatDateTime(log.at)}</td>
-                  <td>
-                    {log.case ? (
-                      <span className="case-code-chip">
-                        <span className={`badge ${log.case.status === "investigating" ? "badge-open" : "badge-closed"}`}>
-                          {log.case.status === "investigating" ? "●" : "✓"}
+        <div className="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: "18%" }}>{t("logs.col.time")}</th>
+                <th style={{ width: "16%" }}>{t("logs.col.case")}</th>
+                <th style={{ width: "22%" }}>{t("logs.col.officer")}</th>
+                <th style={{ width: "32%" }}>{t("logs.sync.result")}</th>
+                <th style={{ width: "12%" }}>{t("logs.col.actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log) => {
+                const busy = busyRef === log.id;
+                const officer = log.officer || {};
+                const initials = ((officer.full_name || officer.username || log.actor || "?").trim()[0] || "?").toUpperCase();
+                const d = log.data || {};
+                return (
+                  <tr key={log.id}>
+                    <td>{formatDateTime(log.at)}</td>
+                    <td>
+                      {log.case ? (
+                        <span className="case-code-chip">
+                          <span className={`badge ${log.case.status === "investigating" ? "badge-open" : "badge-closed"}`}>
+                            {log.case.status === "investigating" ? "●" : "✓"}
+                          </span>
+                          <span className="mono">{log.case.code}</span>
                         </span>
-                        <span className="mono">{log.case.code}</span>
-                      </span>
-                    ) : (
-                      <span className="mono">{log.ref || "—"}</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="officer-cell">
-                      {officer.avatar_url ? (
-                        <img className="officer-avatar" src={officer.avatar_url} alt="" />
                       ) : (
-                        <span className="officer-avatar officer-avatar-fallback">{initials}</span>
+                        <span className="mono">{log.ref || "—"}</span>
                       )}
-                      <div className="officer-name">
-                        <strong>{officer.full_name || log.actor}</strong>
-                        {officer.full_name ? <small>@{log.actor}</small> : null}
+                    </td>
+                    <td>
+                      <div className="officer-cell">
+                        {officer.avatar_url ? (
+                          <img className="officer-avatar" src={officer.avatar_url} alt="" />
+                        ) : (
+                          <span className="officer-avatar officer-avatar-fallback">{initials}</span>
+                        )}
+                        <div className="officer-name">
+                          <strong>{officer.full_name || log.actor}</strong>
+                          {officer.full_name ? <small>@{log.actor}</small> : null}
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", fontSize: 12 }}>
-                      <span className="status-badge create">{t("logs.sync.added")}: {d.added || 0}</span>
-                      <span className="status-badge update">{t("logs.sync.updated")}: {d.updated || 0}</span>
-                      <span className="status-badge delete">{t("logs.sync.duplicated")}: {d.duplicated || 0}</span>
-                      {Number(d.failed || 0) > 0 && (
-                        <span className="status-badge delete">{t("logs.sync.failed")}: {d.failed}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="row-actions">
-                      <button disabled={busy} onClick={() => onView(log)}>{t("common.view")}</button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {!logs.length && (
-              <tr><td colSpan={5}><div className="empty">{t("common.empty")}</div></td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", fontSize: 12 }}>
+                        <span className="status-badge create">{t("logs.sync.added")}: {d.added || 0}</span>
+                        <span className="status-badge update">{t("logs.sync.updated")}: {d.updated || 0}</span>
+                        <span className="status-badge delete">{t("logs.sync.duplicated")}: {d.duplicated || 0}</span>
+                        {Number(d.failed || 0) > 0 && (
+                          <span className="status-badge delete">{t("logs.sync.failed")}: {d.failed}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="row-actions">
+                        <button disabled={busy} onClick={() => onView(log)}>{t("common.view")}</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!logs.length && (
+                <tr><td colSpan={5}><div className="empty">{t("common.empty")}</div></td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {viewing && <DetailModal detainee={viewing} onClose={() => setViewing(null)} />}
@@ -2873,47 +2938,47 @@ function UsersPage({ currentUser }) {
               {users.map((u) => {
                 const initials = ((u.full_name || u.username || "?").trim()[0] || "?").toUpperCase();
                 return (
-                <tr key={u.id}>
-                  <td>
-                    <div className="users-avatar-cell">
-                      {u.avatar_url ? (
-                        <img className="officer-avatar" src={u.avatar_url} alt="" />
-                      ) : (
-                        <span className="officer-avatar officer-avatar-fallback">{initials}</span>
-                      )}
-                      <label className="avatar-upload-btn" title={t("users.avatar_title")}>
-                        {t("users.change")}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={{ display: "none" }}
-                          onChange={(e) => onUploadAvatar(u, e.target.files?.[0])}
-                        />
-                      </label>
-                    </div>
-                  </td>
-                  <td><strong>{u.username}</strong></td>
-                  <td>{u.full_name || "-"}</td>
-                  <td>
-                    <span className={`status-badge ${u.role === "admin" ? "delete" : "create"}`}>
-                      {u.role === "admin" ? t("common.role.admin") : t("common.role.officer")}
-                    </span>
-                  </td>
-                  <td>{u.created_at ? formatDateTime(u.created_at) : "-"}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button onClick={() => { setEditing(u); setShowForm(true); }}>{t("common.edit")}</button>
-                      <button
-                        className="danger-text"
-                        disabled={u.username === "admin" || u.username === currentUser}
-                        onClick={() => onDelete(u)}
-                        title={u.username === "admin" ? t("users.cannot_delete_admin") : u.username === currentUser ? t("users.cannot_delete_self") : ""}
-                      >
-                        {t("common.delete")}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                  <tr key={u.id}>
+                    <td>
+                      <div className="users-avatar-cell">
+                        {u.avatar_url ? (
+                          <img className="officer-avatar" src={u.avatar_url} alt="" />
+                        ) : (
+                          <span className="officer-avatar officer-avatar-fallback">{initials}</span>
+                        )}
+                        <label className="avatar-upload-btn" title={t("users.avatar_title")}>
+                          {t("users.change")}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: "none" }}
+                            onChange={(e) => onUploadAvatar(u, e.target.files?.[0])}
+                          />
+                        </label>
+                      </div>
+                    </td>
+                    <td><strong>{u.username}</strong></td>
+                    <td>{u.full_name || "-"}</td>
+                    <td>
+                      <span className={`status-badge ${u.role === "admin" ? "delete" : "create"}`}>
+                        {u.role === "admin" ? t("common.role.admin") : t("common.role.officer")}
+                      </span>
+                    </td>
+                    <td>{u.created_at ? formatDateTime(u.created_at) : "-"}</td>
+                    <td>
+                      <div className="row-actions">
+                        <button onClick={() => { setEditing(u); setShowForm(true); }}>{t("common.edit")}</button>
+                        <button
+                          className="danger-text"
+                          disabled={u.username === "admin" || u.username === currentUser}
+                          onClick={() => onDelete(u)}
+                          title={u.username === "admin" ? t("users.cannot_delete_admin") : u.username === currentUser ? t("users.cannot_delete_self") : ""}
+                        >
+                          {t("common.delete")}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 );
               })}
               {!users.length && (
@@ -3143,87 +3208,87 @@ function SettingsPage() {
               {hbieError && <StateBox type="error">{hbieError}</StateBox>}
 
               <div className="settings-hbie-body">
-              <div>
-              <FieldRow label={t("settings.hbie.match_threshold.label")}>
-                <input
-                  className="control"
-                  type="number"
-                  min="1"
-                  max={scoreMax}
-                  step="1"
-                  value={matchThr}
-                  onChange={(e) => setMatchThr(e.target.value)}
-                  aria-invalid={!mOk ? "true" : undefined}
-                  required
-                />
-              </FieldRow>
-              <p className="settings-fp-note">{t("settings.hbie.match_threshold.desc")}</p>
+                <div>
+                  <FieldRow label={t("settings.hbie.match_threshold.label")}>
+                    <input
+                      className="control"
+                      type="number"
+                      min="1"
+                      max={scoreMax}
+                      step="1"
+                      value={matchThr}
+                      onChange={(e) => setMatchThr(e.target.value)}
+                      aria-invalid={!mOk ? "true" : undefined}
+                      required
+                    />
+                  </FieldRow>
+                  <p className="settings-fp-note">{t("settings.hbie.match_threshold.desc")}</p>
 
-              <FieldRow label={t("settings.hbie.keep_score.label")}>
-                <input
-                  className="control"
-                  type="number"
-                  min="0"
-                  max={scoreMax}
-                  step="1"
-                  value={keepScore}
-                  onChange={(e) => setKeepScore(e.target.value)}
-                  aria-invalid={!kOk ? "true" : undefined}
-                  required
-                />
-              </FieldRow>
-              <p className="settings-fp-note">{t("settings.hbie.keep_score.desc")}</p>
+                  <FieldRow label={t("settings.hbie.keep_score.label")}>
+                    <input
+                      className="control"
+                      type="number"
+                      min="0"
+                      max={scoreMax}
+                      step="1"
+                      value={keepScore}
+                      onChange={(e) => setKeepScore(e.target.value)}
+                      aria-invalid={!kOk ? "true" : undefined}
+                      required
+                    />
+                  </FieldRow>
+                  <p className="settings-fp-note">{t("settings.hbie.keep_score.desc")}</p>
 
-              <div className="modal-actions" style={{ marginTop: 0 }}>
-                <button
-                  type="button"
-                  className="button"
-                  onClick={resetHbie}
-                  disabled={hbieSaving || !hbie?.defaults}
-                >
-                  {t("settings.hbie.reset", {
-                    m: hbie?.defaults?.match_threshold ?? "—",
-                    k: hbie?.defaults?.keep_score ?? "—",
-                  })}
-                </button>
-              </div>
-              </div>
+                  <div className="modal-actions" style={{ marginTop: 0 }}>
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={resetHbie}
+                      disabled={hbieSaving || !hbie?.defaults}
+                    >
+                      {t("settings.hbie.reset", {
+                        m: hbie?.defaults?.match_threshold ?? "—",
+                        k: hbie?.defaults?.keep_score ?? "—",
+                      })}
+                    </button>
+                  </div>
+                </div>
 
-              {/* Bang 3 muc diem: doc la hieu ngay 2 o ben trai cat ket qua o dau,
+                {/* Bang 3 muc diem: doc la hieu ngay 2 o ben trai cat ket qua o dau,
                   khong bat admin tu hinh dung. So cap nhat theo o dang go nen
                   thay truc tiep hau qua truoc khi bam Luu. */}
-              <div>
-              <table className="settings-preview-table">
-                <thead>
-                  <tr>
-                    <th>{t("settings.hbie.bands.col_range")}</th>
-                    <th>{t("settings.hbie.bands.col_effect")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>{mOk ? `≥ ${mNum}` : "—"}</td>
-                    <td>{t("smp.matched")}</td>
-                  </tr>
-                  <tr>
-                    <td>{pairOk ? `${kNum} – ${mNum - 1}` : "—"}</td>
-                    <td>{t("smp.review")}</td>
-                  </tr>
-                  <tr>
-                    <td>{kOk ? `< ${kNum}` : "—"}</td>
-                    <td>{t("settings.hbie.bands.dropped")}</td>
-                  </tr>
-                </tbody>
-              </table>
+                <div>
+                  <table className="settings-preview-table">
+                    <thead>
+                      <tr>
+                        <th>{t("settings.hbie.bands.col_range")}</th>
+                        <th>{t("settings.hbie.bands.col_effect")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{mOk ? `≥ ${mNum}` : "—"}</td>
+                        <td>{t("smp.matched")}</td>
+                      </tr>
+                      <tr>
+                        <td>{pairOk ? `${kNum} – ${mNum - 1}` : "—"}</td>
+                        <td>{t("smp.review")}</td>
+                      </tr>
+                      <tr>
+                        <td>{kOk ? `< ${kNum}` : "—"}</td>
+                        <td>{t("settings.hbie.bands.dropped")}</td>
+                      </tr>
+                    </tbody>
+                  </table>
 
-              {thrLowered ? (
-                <p className="settings-fp-note" style={{ color: "var(--danger, #e5484d)" }}>
-                  {t("settings.hbie.warn_low", { v: defMatch })}
-                </p>
-              ) : (
-                <p className="settings-fp-note">{t("settings.hbie.note")}</p>
-              )}
-              </div>
+                  {thrLowered ? (
+                    <p className="settings-fp-note" style={{ color: "var(--danger, #e5484d)" }}>
+                      {t("settings.hbie.warn_low", { v: defMatch })}
+                    </p>
+                  ) : (
+                    <p className="settings-fp-note">{t("settings.hbie.note")}</p>
+                  )}
+                </div>
               </div>
             </form>
           </section>
@@ -5324,6 +5389,11 @@ const styles = `
     border-radius: 14px;
     background: var(--bg-panel);
   }
+  .filter-bar .button.primary,
+  .filter-bar button[type="submit"] {
+    min-width: 140px;
+    padding: 0 24px;
+  }
 
   /* SearchPage: 3-mode tabs */
   .search-tabs {
@@ -5543,7 +5613,7 @@ const styles = `
   }
   /* Anh dai dien va cum nut: rong CO DINH, khong an vao phan chia deu o giua. */
   .detainees-table--even th:first-child,
-  .detainees-table--even td:first-child { width: 88px; }
+  .detainees-table--even td:first-child { width: 110px; }
   .detainees-table--even th:last-child,
   .detainees-table--even td:last-child { width: 200px; }
   .detainees-table th {
