@@ -309,19 +309,15 @@ export default function Dashboard({ username = "admin", role = "user", fullName 
   );
 }
 
-// Chip thiet bi tren header. Chip cccd/scale bi an khi thiet bi tuong ung tat
-// (xem lib/features.js) — camera va van tay luon hien.
+// Header chỉ hiển thị hai thiết bị phục vụ thu nhận chính.
 const DEVICE_CHIPS = [
   { key: "camera", labelKey: "header.device.camera" },
-  { key: "cccd", labelKey: "header.device.cccd", feature: "cccd_reader" },
   { key: "fp", labelKey: "header.device.fp" },
-  { key: "scale", labelKey: "header.device.scale", feature: "weight_scale" },
 ];
 
 function Header({ username, fullName, devices, notif, onLogout, isAdmin, onEditProfile, onEditDetainee }) {
   const { t } = useI18n();
-  const features = useFeatures();
-  const chips = DEVICE_CHIPS.filter((d) => !d.feature || features[d.feature]);
+  const chips = DEVICE_CHIPS;
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [viewingMatch, setViewingMatch] = useState(null);
@@ -1301,64 +1297,66 @@ function DetaineesPage({ onEdit }) {
       </PageHeader>
 
       <div className="detainees-table-wrap">
-        {loading ? (
-          <StateBox>{t("common.loading")}</StateBox>
-        ) : error ? (
-          <StateBox type="error">{error}</StateBox>
-        ) : !items.length ? (
-          <StateBox>{t("detainee.empty")}</StateBox>
-        ) : (
-          /* --even: 5 cot du lieu chia deu be ngang (xem CSS o duoi file). */
-          <table className="detainees-table detainees-table--even">
-            <thead>
-              <tr>
-                <th>{t("detainee.col.photo")}</th>
-                <th>{t("detainee.col.code")}</th>
-                <th>{t("detainee.col.name")}</th>
-                <th>{t("detainee.col.gender")}</th>
-                <th>{t("detainee.col.dob")}</th>
-                <th>{t("detainee.col.cccd")}</th>
-                <th>{t("detainee.col.actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <div className="table-avatar">
-                      {item.photo_url ? (
-                        <img src={item.photo_url} alt="" />
-                      ) : (
-                        (item.full_name || "?").slice(0, 1).toUpperCase()
-                      )}
-                    </div>
-                  </td>
-                  <td><strong>{item.personal_id || item.code}</strong></td>
-                  <td>{item.full_name}</td>
-                  <td>{item.gender === "female" ? t("common.female") : t("common.male")}</td>
-                  <td>{item.dob ? formatDate(item.dob) : "-"}</td>
-                  <td>{item.cccd_number || "-"}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button onClick={() => setViewing(item)}>{t("detainee.action.view")}</button>
-                      <button
-                        onClick={async () => {
-                          try {
-                            const full = await api.getDetainee(item.id);
-                            onEdit?.(full);
-                          } catch {
-                            onEdit?.(item);
-                          }
-                        }}
-                      >{t("detainee.action.edit")}</button>
-                      <button className="danger-text" onClick={() => deleteItem(item)}>{t("detainee.action.delete")}</button>
-                    </div>
-                  </td>
+        <div className="detainees-table-scroll">
+          {loading ? (
+            <StateBox>{t("common.loading")}</StateBox>
+          ) : error ? (
+            <StateBox type="error">{error}</StateBox>
+          ) : !items.length ? (
+            <StateBox>{t("detainee.empty")}</StateBox>
+          ) : (
+            /* --even: 5 cot du lieu chia deu be ngang (xem CSS o duoi file). */
+            <table className="detainees-table detainees-table--even">
+              <thead>
+                <tr>
+                  <th>{t("detainee.col.photo")}</th>
+                  <th>{t("detainee.col.code")}</th>
+                  <th>{t("detainee.col.name")}</th>
+                  <th>{t("detainee.col.gender")}</th>
+                  <th>{t("detainee.col.dob")}</th>
+                  <th>{t("detainee.col.cccd")}</th>
+                  <th>{t("detainee.col.actions")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <div className="table-avatar">
+                        {item.photo_url ? (
+                          <img src={item.photo_url} alt="" />
+                        ) : (
+                          (item.full_name || "?").slice(0, 1).toUpperCase()
+                        )}
+                      </div>
+                    </td>
+                    <td><strong>{item.personal_id || item.code}</strong></td>
+                    <td>{item.full_name}</td>
+                    <td>{item.gender === "female" ? t("common.female") : t("common.male")}</td>
+                    <td>{item.dob ? formatDate(item.dob) : "-"}</td>
+                    <td>{item.cccd_number || "-"}</td>
+                    <td>
+                      <div className="row-actions">
+                        <button onClick={() => setViewing(item)}>{t("detainee.action.view")}</button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const full = await api.getDetainee(item.id);
+                              onEdit?.(full);
+                            } catch {
+                              onEdit?.(item);
+                            }
+                          }}
+                        >{t("detainee.action.edit")}</button>
+                        <button className="danger-text" onClick={() => deleteItem(item)}>{t("detainee.action.delete")}</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
         <div className="session-list-toolbar">
           <div className="session-list-total">{t("common.total", { n: total })}</div>
           <div className="pagination">
@@ -1419,6 +1417,12 @@ const DetailIcon = {
   home: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2z" />
+    </svg>
+  ),
+  flag: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
     </svg>
   ),
   pin: (
@@ -1490,9 +1494,7 @@ function DetailModal({ detainee, onClose, onEdit }) {
             </div>
           </aside>
 
-          {/* O "Buong giam" da bo: app khong con quan ly giam giu. Con 7 o nen
-              luoi de detail-grid-2x4 (8 o) se ho mot cho o cuoi — dung
-              detail-grid-2x4 nhung o "Noi o" cho chiem ca 2 cot de lap day. */}
+          {/* Hien thi 8 truong theo luoi 2 cot x 4 hang. */}
           <div className="detail-grid-v2 detail-grid-2x4">
             <InfoTile icon={DetailIcon.cccd} label={t("detainee.field.cccd")} value={d.cccd_number || "—"} />
             <InfoTile icon={DetailIcon.note} label={t("detainee.field.personal_id")} value={d.personal_id || "—"} />
@@ -1500,7 +1502,8 @@ function DetailModal({ detainee, onClose, onEdit }) {
             <InfoTile icon={DetailIcon.ethnic} label={t("detainee.field.ethnicity")} value={d.ethnicity || "Kinh"} action={!d.ethnicity ? editMissing : null} />
             <InfoTile icon={DetailIcon.gender} label={t("detainee.field.gender")} value={<span><b>{genderSymbol}</b> {genderText}</span>} />
             <InfoTile icon={DetailIcon.flag} label={t("detainee.field.nationality")} value={d.nationality || t("detainee.field.nationality_default")} action={!d.nationality ? editMissing : null} />
-            <InfoTile className="tile-span-2" icon={DetailIcon.pin} label={t("detainee.field.address")} value={d.address || "—"} />
+            <InfoTile icon={DetailIcon.pin} label={t("detainee.field.address")} value={d.address || "—"} />
+            <InfoTile icon={DetailIcon.home} label={t("detainee.field.hometown")} value={d.hometown || "—"} />
           </div>
         </div>
       </div>
@@ -1796,61 +1799,63 @@ function SyncPage() {
       {error && <div className="error-box">{error}</div>}
 
       <div className="sync-table-wrap">
-        <table className="sync-table">
-          <thead>
-            <tr>
-              <th style={{ width: 40 }}>
-                <input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label={t("sync.select_all_aria")} />
-              </th>
-              <th>{t("sync.col.code")}</th>
-              <th>{t("sync.col.status")}</th>
-              <th>{t("case.col.case")}</th>
-              <th>{t("sync.col.location")}</th>
-              <th>{t("case.col.occurred_at")}</th>
-              <th>{t("sync.col.closed")}</th>
-              <th style={{ textAlign: "center" }}>{t("sync.col.count")}</th>
-              <th style={{ width: 140 }}>{t("sync.col.actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pagedRows.length === 0 && !loading && (
-              <tr><td colSpan={9} className="sync-empty">{t("sync.empty")}</td></tr>
-            )}
-            {pagedRows.map((c) => {
-              const busy = syncingIds.has(c.id);
-              const open = c.status === "investigating";
-              return (
-                <tr key={c.id} className={selected.has(c.id) ? "row-selected" : ""}>
-                  <td><input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleOne(c.id)} /></td>
-                  <td><strong>{c.code}</strong></td>
-                  <td>
-                    <span className={"sync-badge " + (open ? "open" : "closed")}>
-                      {t(open ? "case.status.investigating" : "case.status.closed")}
-                    </span>
-                  </td>
-                  <td>{c.name || t("case.no_name")}</td>
-                  <td>{c.location || "—"}</td>
-                  <td>{fmtDT(c.occurred_at)}</td>
-                  <td>{fmtDT(c.closed_at)}</td>
-                  <td style={{ textAlign: "center" }}>{c.detainee_count || 0}</td>
-                  <td>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <button className="button small" disabled={busy} onClick={() => prepareSync(c)}>
-                        {busy ? t("sync.syncing") : t("sync.action")}
-                      </button>
-                      {syncErrors[c.id] && (
-                        <span style={{ fontSize: 11, color: "#e53e3e" }}>{t("sync.err_prefix", { message: syncErrors[c.id] })}</span>
-                      )}
-                      {syncSuccess[c.id] && !syncErrors[c.id] && (
-                        <span style={{ fontSize: 11, color: "#12af64" }}>{t("sync.success")}</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="sync-table-scroll">
+          <table className="sync-table">
+            <thead>
+              <tr>
+                <th style={{ width: 40 }}>
+                  <input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label={t("sync.select_all_aria")} />
+                </th>
+                <th>{t("sync.col.code")}</th>
+                <th>{t("sync.col.status")}</th>
+                <th>{t("case.col.case")}</th>
+                <th>{t("sync.col.location")}</th>
+                <th>{t("case.col.occurred_at")}</th>
+                <th>{t("sync.col.closed")}</th>
+                <th style={{ textAlign: "center" }}>{t("sync.col.count")}</th>
+                <th style={{ width: 140 }}>{t("sync.col.actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pagedRows.length === 0 && !loading && (
+                <tr><td colSpan={9} className="sync-empty">{t("sync.empty")}</td></tr>
+              )}
+              {pagedRows.map((c) => {
+                const busy = syncingIds.has(c.id);
+                const open = c.status === "investigating";
+                return (
+                  <tr key={c.id} className={selected.has(c.id) ? "row-selected" : ""}>
+                    <td><input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleOne(c.id)} /></td>
+                    <td><strong>{c.code}</strong></td>
+                    <td>
+                      <span className={"sync-badge " + (open ? "open" : "closed")}>
+                        {t(open ? "case.status.investigating" : "case.status.closed")}
+                      </span>
+                    </td>
+                    <td>{c.name || t("case.no_name")}</td>
+                    <td>{c.location || "—"}</td>
+                    <td>{fmtDT(c.occurred_at)}</td>
+                    <td>{fmtDT(c.closed_at)}</td>
+                    <td style={{ textAlign: "center" }}>{c.detainee_count || 0}</td>
+                    <td>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <button className="button small" disabled={busy} onClick={() => prepareSync(c)}>
+                          {busy ? t("sync.syncing") : t("sync.action")}
+                        </button>
+                        {syncErrors[c.id] && (
+                          <span style={{ fontSize: 11, color: "#e53e3e" }}>{t("sync.err_prefix", { message: syncErrors[c.id] })}</span>
+                        )}
+                        {syncSuccess[c.id] && !syncErrors[c.id] && (
+                          <span style={{ fontSize: 11, color: "#12af64" }}>{t("sync.success")}</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
         <div className="session-list-toolbar">
           <div className="session-list-total">{t("common.total", { n: totalRows })}</div>
           <div className="pagination">
@@ -2508,77 +2513,79 @@ function DetaineeHistoryPage({ onEdit }) {
 
       <div className="report-scroll">
         <div className="detainees-table-wrap">
-          <table className="detainees-table">
-            <thead>
-              <tr>
-                <th style={{ width: "12%" }}>{t("logs.col.time")}</th>
-                <th style={{ width: "13%" }}>{t("logs.col.case")}</th>
-                <th style={{ width: "18%" }}>{t("logs.col.officer")}</th>
-                <th style={{ width: "11%" }}>{t("logs.col.action")}</th>
-                <th style={{ width: "12%" }}>{t("history.col.code")}</th>
-                <th style={{ width: "12%" }}>{t("logs.col.detainee_name")}</th>
-                <th style={{ width: "12%" }}>{t("logs.col.detainee_cccd")}</th>
-                <th style={{ width: "10%" }}>{t("logs.col.actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pagedLogs.map((log) => {
-                const busy = busyRef === log.id;
-                const officer = log.officer || {};
-                const initials = ((officer.full_name || officer.username || log.actor || "?").trim()[0] || "?").toUpperCase();
-                const canAct = isActable(log);
-                return (
-                  <tr key={log.id}>
-                    <td>{formatDateTime(log.at)}</td>
-                    <td>
-                      {log.case ? (
-                        <span className="case-code-chip">
-                          <span className={`badge ${log.case.status === "investigating" ? "badge-open" : "badge-closed"}`}>
-                            {log.case.status === "investigating" ? "●" : "✓"}
+          <div className="detainees-table-scroll">
+            <table className="detainees-table">
+              <thead>
+                <tr>
+                  <th style={{ width: "12%" }}>{t("logs.col.time")}</th>
+                  <th style={{ width: "13%" }}>{t("logs.col.case")}</th>
+                  <th style={{ width: "18%" }}>{t("logs.col.officer")}</th>
+                  <th style={{ width: "11%" }}>{t("logs.col.action")}</th>
+                  <th style={{ width: "12%" }}>{t("history.col.code")}</th>
+                  <th style={{ width: "12%" }}>{t("logs.col.detainee_name")}</th>
+                  <th style={{ width: "12%" }}>{t("logs.col.detainee_cccd")}</th>
+                  <th style={{ width: "10%" }}>{t("logs.col.actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedLogs.map((log) => {
+                  const busy = busyRef === log.id;
+                  const officer = log.officer || {};
+                  const initials = ((officer.full_name || officer.username || log.actor || "?").trim()[0] || "?").toUpperCase();
+                  const canAct = isActable(log);
+                  return (
+                    <tr key={log.id}>
+                      <td>{formatDateTime(log.at)}</td>
+                      <td>
+                        {log.case ? (
+                          <span className="case-code-chip">
+                            <span className={`badge ${log.case.status === "investigating" ? "badge-open" : "badge-closed"}`}>
+                              {log.case.status === "investigating" ? "●" : "✓"}
+                            </span>
+                            <span className="mono">{log.case.code}</span>
                           </span>
-                          <span className="mono">{log.case.code}</span>
-                        </span>
-                      ) : (
-                        <span style={{ color: "var(--muted)" }}>—</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="officer-cell">
-                        {officer.avatar_url ? (
-                          <img className="officer-avatar" src={officer.avatar_url} alt="" />
                         ) : (
-                          <span className="officer-avatar officer-avatar-fallback">{initials}</span>
+                          <span style={{ color: "var(--muted)" }}>—</span>
                         )}
-                        <div className="officer-name">
-                          <strong>{officer.full_name || log.actor}</strong>
-                          {officer.full_name ? <small>@{log.actor}</small> : null}
-                        </div>
-                      </div>
-                    </td>
-                    <td><span className={`status-badge ${log.action}`}>{labels[log.action] || log.action}</span></td>
-                    <td>{log.ref || "—"}</td>
-                    <td>{log.detainee?.full_name || log.data?.full_name || "—"}</td>
-                    <td>{log.detainee?.cccd_number || "—"}</td>
-                    <td>
-                      {canAct ? (
-                        <div className="row-actions">
-                          <button disabled={busy} onClick={() => onView(log)}>{t("common.view")}</button>
-                          {onEdit && (
-                            <button disabled={busy} onClick={() => onEditLog(log)}>{t("history.open_edit")}</button>
+                      </td>
+                      <td>
+                        <div className="officer-cell">
+                          {officer.avatar_url ? (
+                            <img className="officer-avatar" src={officer.avatar_url} alt="" />
+                          ) : (
+                            <span className="officer-avatar officer-avatar-fallback">{initials}</span>
                           )}
+                          <div className="officer-name">
+                            <strong>{officer.full_name || log.actor}</strong>
+                            {officer.full_name ? <small>@{log.actor}</small> : null}
+                          </div>
                         </div>
-                      ) : (
-                        <span style={{ color: "var(--muted)" }}>-</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {!pagedLogs.length && (
-                <tr><td colSpan={8}><div className="empty">{t("common.empty")}</div></td></tr>
-              )}
-            </tbody>
-          </table>
+                      </td>
+                      <td><span className={`status-badge ${log.action}`}>{labels[log.action] || log.action}</span></td>
+                      <td>{log.ref || "—"}</td>
+                      <td>{log.detainee?.full_name || log.data?.full_name || "—"}</td>
+                      <td>{log.detainee?.cccd_number || "—"}</td>
+                      <td>
+                        {canAct ? (
+                          <div className="row-actions">
+                            <button disabled={busy} onClick={() => onView(log)}>{t("common.view")}</button>
+                            {onEdit && (
+                              <button disabled={busy} onClick={() => onEditLog(log)}>{t("history.open_edit")}</button>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ color: "var(--muted)" }}>-</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {!pagedLogs.length && (
+                  <tr><td colSpan={8}><div className="empty">{t("common.empty")}</div></td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
           <div className="session-list-toolbar">
             <div className="session-list-total">{t("common.total", { n: totalRows })}</div>
             <div className="pagination">
@@ -5357,6 +5364,15 @@ const styles = `
     color: var(--text);
     background: var(--bg-panel);
   }
+  select.control {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 42px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23cbdcf3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 7.5 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 14px 14px;
+  }
   .control:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(34, 113, 236, .12);
@@ -5502,9 +5518,15 @@ const styles = `
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
+  }
+  .detainees-table-wrap .detainees-table-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
   }
   .detainees-table-wrap .detainees-table {
     width: 100%;
@@ -5521,17 +5543,20 @@ const styles = `
   }
   /* Anh dai dien va cum nut: rong CO DINH, khong an vao phan chia deu o giua. */
   .detainees-table--even th:first-child,
-  .detainees-table--even td:first-child { width: 56px; }
+  .detainees-table--even td:first-child { width: 88px; }
   .detainees-table--even th:last-child,
   .detainees-table--even td:last-child { width: 200px; }
   .detainees-table th {
-    background: rgba(53, 216, 255, 0.08);
+    background: rgba(8, 22, 46, 0.95);
     padding: 9px 14px;
     text-align: left;
     font-size: 12px;
     text-transform: uppercase;
     color: var(--muted);
     font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 2;
   }
   .detainees-table td {
     padding: 10px 14px;
@@ -5552,6 +5577,8 @@ const styles = `
     padding: 8px 14px;
     background: var(--bg-panel);
     border-top: 1px solid var(--border);
+    margin-top: auto;
+    flex-shrink: 0;
   }
   .detainees-table-wrap .session-list-total {
     font-size: 12px;
@@ -5987,6 +6014,7 @@ const styles = `
     width: min(1180px, 100%);
     max-height: 92vh;
     overflow: hidden;
+    scrollbar-gutter: auto;
     display: flex;
     flex-direction: column;
     background: var(--bg-panel);
@@ -7176,6 +7204,8 @@ const styles = `
     min-height: 0;
     overflow: auto;
     padding-bottom: 4px;
+    display: flex;
+    flex-direction: column;
   }
   .report-scroll .table-card { overflow: visible; }
   .report-scroll thead th {

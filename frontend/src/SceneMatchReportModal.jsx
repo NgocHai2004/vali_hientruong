@@ -1,10 +1,11 @@
-import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { usbApi } from "./api";
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api as casesApi, usbApi } from "./api";
 import UsbDrivePickerModal from "./UsbDrivePickerModal";
 import { buildProfilePdfBlob } from "./lib/exportProfilePdf";
 import { useI18n } from "./i18n";
 import { enrolledUrl, minutiae, SCORE_TOTAL } from "./sceneDemo";
 import { MATCH_ROWS } from "./sceneMatchDemo";
+import AutoPaginatedReport from "./AutoPaginatedReport";
 
 // Tên file xuất PDF chuẩn hóa
 export function reportFileName(sessionCode) {
@@ -43,14 +44,14 @@ function toPercentageDots(points = [], width = 800, height = 750) {
 }
 
 // Component vẽ các điểm Minutiae overlay trên ảnh báo cáo (nhỏ gọn, không số, không tràn viền)
-function ReportMinutiaeDots({ dots = [] }) {
+function ReportMinutiaeDots({ dots = [], color = "red" }) {
   if (!dots || dots.length === 0) return null;
   return (
     <div className="sr-fig-dots" aria-hidden="true">
       {dots.map((d, i) => (
         <span
           key={i}
-          className="sr-fig-dot"
+          className={`sr-fig-dot sr-fig-dot-${color}`}
           style={{ left: `${d.x}%`, top: `${d.y}%` }}
         />
       ))}
@@ -58,11 +59,14 @@ function ReportMinutiaeDots({ dots = [] }) {
   );
 }
 
-// Banner thông báo bảo mật đầu mỗi trang (chuẩn 100% bản gốc)
-function SecurityBanner() {
+// Footer thông báo bảo mật + số trang ở cuối mỗi trang (chuẩn 100% bản gốc)
+function PageFooter({ pageNum }) {
   return (
-    <div className="sr-sec-banner">
-      Thông báo bảo mật: Báo cáo này được lập nhằm phục vụ trao đổi kỹ thuật chuyên môn và đánh giá kết quả hệ thống. Nội dung được xây dựng trên cơ sở danh sách kết quả và các ảnh điện tử do HTI GROUP tiếp nhận từ đơn vị cung cấp. Việc nộp chứng cứ chính thức, xác nhận chuỗi bảo quản chứng cứ (chain of custody), thẩm định độc lập và xác lập giá trị pháp lý của chứng cứ phải được thực hiện theo quy trình nghiệp vụ của Bộ Công an.
+    <div className="sr-page-footer">
+      <div className="sr-sec-notice">
+        <strong className="sr-sec-notice-tag">Thông báo bảo mật:</strong> Báo cáo này được lập nhằm phục vụ trao đổi kỹ thuật chuyên môn và đánh giá kết quả hệ thống. Nội dung được xây dựng trên cơ sở danh sách kết quả và các ảnh điện tử do HTI GROUP tiếp nhận từ đơn vị cung cấp. Việc nộp chứng cứ chính thức, xác nhận chuỗi bảo quản chứng cứ (chain of custody), thẩm định độc lập và xác lập giá trị pháp lý của chứng cứ phải được thực hiện theo quy trình nghiệp vụ của Bộ Công an.
+      </div>
+      <div className="sr-page-num">{pageNum}</div>
     </div>
   );
 }
@@ -124,13 +128,13 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
       const fingerRaw = mRow.finger || tr.finger || "fp.finger.right_index.long";
       const fingerName = String(fingerRaw).startsWith("fp.") ? t(fingerRaw) : fingerRaw;
       const refCodeStr = `${subjName}_${fingerName}`;
-      
+
       // Ảnh 03: Vết hiện trường đã xử lý đặc trưng
       const lPts = tr.landmark?.points || tr.latent_landmarks?.points || mRow.latent_landmarks?.points || (Array.isArray(tr.landmark) ? tr.landmark : []) || [];
       const lDots = lPts.length > 0
         ? toPercentageDots(lPts, tr.img_width || mRow.latent_dim?.width || 800, tr.img_height || mRow.latent_dim?.height || 750)
         : toPercentageDots(minutiae(seq, 68, false), 800, 750);
-      
+
       // Ảnh 04: Ảnh đối sánh đã xử lý đặc trưng
       const cPts = mRow.candidate_landmarks?.points || (Array.isArray(mRow.candidate_landmarks) ? mRow.candidate_landmarks : []) || [];
       const cDots = cPts.length > 0
@@ -164,10 +168,8 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
   const dateStr = `Hà Nội, ngày ${String(now.getDate()).padStart(2, "0")} tháng ${String(now.getMonth() + 1).padStart(2, "0")} năm ${now.getFullYear()}`;
 
   return (
-    <div ref={ref} className="sr-report-root">
-      {/* ==================== PAGE 1 ==================== */}
-      <div className="preview-a4 preview-a4-portrait sr-page-a4">
-        <SecurityBanner />
+    <AutoPaginatedReport ref={ref} footer={<PageFooter pageNum={1} />}>
+      <div data-report-flow>
 
         <div className="sr-header-top">
           <div className="sr-org-title">HTI GROUP</div>
@@ -198,7 +200,10 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
             <li>{totalLT} ảnh vân tay dấu vết hiện trường (Latent – LT).</li>
             <li>Tổng số dữ liệu phục vụ đối sánh gồm {totalTP} ảnh vân tay TP và {totalLT} ảnh LT.</li>
           </ul>
-
+        </div>
+      </div>
+      <div data-report-flow>
+        <div className="sr-section">
           <div className="sr-sub-title">Quy mô đối sánh:</div>
           <ul className="sr-dash-list">
             <li>
@@ -224,12 +229,8 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
             <li>Tổng thời gian xử lý ghi nhận trên hệ thống: 13 giờ 18 phút</li>
           </ul>
         </div>
-
-        <div className="sr-page-num">1</div>
       </div>
-
-      {/* ==================== PAGE 2 ==================== */}
-      <div className="preview-a4 preview-a4-portrait sr-page-a4">
+      <div data-report-flow>
         <div className="sr-section">
           <div className="sr-section-h">3. QUÁ TRÌNH THỰC HIỆN</div>
           <ul className="sr-bullet-list">
@@ -248,12 +249,18 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
             <li>
               <strong>Đánh giá tính nhất quán của kết quả:</strong> Bên cạnh việc xác định các đặc điểm tương ứng, quá trình đánh giá còn xem xét sự nhất quán tổng thể của cấu trúc đường vân giữa dấu latent và dấu tham chiếu. Những khác biệt quan sát được cần được xem xét trong bối cảnh chất lượng ảnh, mức độ đầy đủ của dấu, biến dạng hoặc điều kiện hình thành dấu vết, qua đó hỗ trợ phân biệt giữa khác biệt có thể giải thích và khác biệt có ý nghĩa đối với kết quả đối sánh.
             </li>
+          </ul>
+        </div>
+      </div>
+      <div data-report-flow>
+        <div className="sr-section">
+          <ul className="sr-bullet-list">
             <li>
               <strong>Kết luận kỹ thuật:</strong> Các bản ghi được đưa vào phụ lục là những cặp đối sánh được ghi nhận trong danh sách kết quả sau quá trình tìm kiếm, xếp hạng và kiểm tra trên hệ thống. Mỗi kết quả đi kèm ảnh chụp giao diện đối chiếu, thể hiện dấu vết truy vấn, dấu vân tham chiếu và các điểm đặc trưng tương ứng, phục vụ việc xem xét, xác minh và làm cơ sở cho quá trình đánh giá chuyên môn tiếp theo.
             </li>
           </ul>
 
-          <div className="sr-section-h" style={{ marginTop: "10px" }}>4. KẾT QUẢ CUỐI CÙNG</div>
+          <div className="sr-section-h">4. KẾT QUẢ CUỐI CÙNG</div>
           <p className="sr-text">
             Danh sách kết quả cung cấp {matchCount} bản ghi đối sánh. Mỗi bản ghi bao gồm số thứ tự, mã ảnh hiện trường, vị trí ngón, mã ảnh người/dấu vân tham chiếu, ảnh chụp màn hình đối chiếu và quy tắc đặt tên ảnh.
           </p>
@@ -261,25 +268,21 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
           <div className="sr-sub-title">Thông tin kỹ thuật của bộ kết quả:</div>
           <ul className="sr-dash-list">
             <li>
-              <strong>Trích xuất đặc trưng dấu vân tay tham chiếu:</strong> thời gian xử lý trung bình khoảng 0,15 giây/01 dấu vân tay, tương đương khoảng 1,8 giây/01 hồ sơ đối tượng gồm 10 dấu vân tay và 02 dấu lòng bàn tay. Quá trình này thực hiện phân tích và mã hóa các đặc trưng sinh trắc học phục vụ tìm kiếm, đối sánh trên hệ thống HABIS.
+              Trích xuất đặc trưng dấu vân tay tham chiếu: thời gian xử lý trung bình khoảng 0,15 giây/01 dấu vân tay, tương đương khoảng 1,8 giây/01 hồ sơ đối tượng gồm 10 dấu vân tay và 02 dấu lòng bàn tay. Quá trình này thực hiện phân tích và mã hóa các đặc trưng sinh trắc học phục vụ tìm kiếm, đối sánh trên hệ thống HABIS.
             </li>
             <li>
-              <strong>Trích xuất đặc trưng dấu vết hiện trường (latent):</strong> thời gian xử lý trung bình khoảng 6 giây/01 mẫu trong chế độ phân tích tự động; đối với các dấu vết có chất lượng thấp, không đầy đủ hoặc cần chuyên gia hiệu chỉnh vùng dấu và điểm đặc trưng, thời gian xử lý khoảng 45 giây/01 mẫu có tác động thủ công.
+              Trích xuất đặc trưng dấu vết hiện trường (latent): thời gian xử lý trung bình khoảng 6 giây/01 mẫu trong chế độ phân tích tự động; đối với các dấu vết có chất lượng thấp, không đầy đủ hoặc cần chuyên gia hiệu chỉnh vùng dấu và điểm đặc trưng, thời gian xử lý khoảng 45 giây/01 mẫu có tác động thủ công.
             </li>
             <li>
-              <strong>Kết quả tìm kiếm và đối sánh:</strong> bộ kết quả ghi nhận {matchCount} cặp đối sánh giữa dấu vết hiện trường và dấu vân tay tham chiếu, được hệ thống truy xuất, hiển thị và đối chiếu trên giao diện xác minh. Mỗi kết quả thể hiện dấu vết truy vấn, dấu tham chiếu tương ứng và các điểm đặc trưng được sử dụng để hỗ trợ đánh giá mức độ tương thích giữa hai mẫu.
+              Kết quả tìm kiếm và đối sánh: bộ kết quả mới ghi nhận {matchCount} cặp đối sánh giữa dấu vết hiện trường và dấu vân tay tham chiếu, được hệ thống truy xuất, hiển thị và đối chiếu trên giao diện xác minh. Mỗi kết quả thể hiện dấu vết truy vấn, dấu tham chiếu tương ứng và các điểm đặc trưng được sử dụng để hỗ trợ đánh giá mức độ tương thích giữa hai mẫu.
             </li>
           </ul>
         </div>
-
-        <div className="sr-page-num">2</div>
       </div>
-
-      {/* ==================== PAGE 3 ==================== */}
-      <div className="preview-a4 preview-a4-portrait sr-page-a4">
+      <div data-report-flow>
         <div className="sr-section">
-          <p className="sr-text" style={{ fontStyle: "italic", marginBottom: "12px" }}>
-            <strong>Lưu ý:</strong> Các số hiệu kết quả trình bày trong báo cáo này là mã định danh tạm thời được sử dụng cho mục đích lập báo cáo và đối chiếu kỹ thuật. Sau khi hồ sơ vụ án được hoàn thiện và số hiệu vật chứng chính thức được Bộ Công an xác nhận, các mã định danh này sẽ được thay thế tương ứng bằng số hiệu vật chứng chính thức được thiết lập trong cơ sở dữ liệu đồng bộ.
+          <p className="sr-text" style={{ fontWeight: "700", marginBottom: "6px" }}>
+            Lưu ý: Các số hiệu kết quả trình bày trong báo cáo này là mã định danh tạm thời được sử dụng cho mục đích lập báo cáo và đối chiếu kỹ thuật. Sau khi hồ sơ vụ án được hoàn thiện và số hiệu vật chứng chính thức được Bộ Công an xác nhận, các mã định danh này sẽ được thay thế tương ứng bằng số hiệu vật chứng chính thức được thiết lập trong cơ sở dữ liệu đồng bộ.
           </p>
 
           <div className="sr-section-h">5. Ý KIẾN CHUYÊN MÔN</div>
@@ -290,7 +293,7 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
             Kết quả kỹ thuật này phục vụ đánh giá hệ thống và hỗ trợ quá trình xác minh chuyên môn. Việc đưa kết quả vào hoạt động tố tụng, quản lý hành chính hoặc kết luận giám định chính thức cần được thực hiện theo quy trình nghiệp vụ, bao gồm xác nhận số hiệu vật chứng, chuỗi quản lý vật chứng (chain of custody), thẩm định độc lập (peer review) và phê duyệt của giám định viên có thẩm quyền.
           </p>
 
-          <div className="sr-section-h" style={{ marginTop: "12px" }}>6. KIẾN NGHỊ CÁC BƯỚC TIẾP THEO</div>
+          <div className="sr-section-h">6. KIẾN NGHỊ CÁC BƯỚC TIẾP THEO</div>
           <ul className="sr-bullet-list">
             <li>
               <strong>Xác nhận định danh chính thức:</strong> Đối chiếu {matchCount} bản ghi với số hiệu vật chứng/hồ sơ chính thức và xác nhận ánh xạ giữa mã ảnh hiện trường, vị trí ngón và bản ghi dấu vân tham chiếu.
@@ -309,22 +312,17 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
             </li>
           </ul>
         </div>
-
-        <div className="sr-page-num">3</div>
       </div>
-
-      {/* ==================== PAGE 4+: PHỤ LỤC A ==================== */}
       {matchPairs.length === 0 ? (
-        <div className="preview-a4 preview-a4-portrait sr-page-a4">
+        <div data-report-flow>
           <div className="sr-section">
             <div className="sr-appendix-main-title">PHỤ LỤC A. HÌNH ẢNH CÁC CẶP DẤU VÂN TAY ĐƯỢC XÁC ĐỊNH TRÙNG KHỚP</div>
             <p className="sr-text">Không có dữ liệu đối sánh nào.</p>
           </div>
-          <div className="sr-page-num">4</div>
         </div>
       ) : (
         matchPairs.map((pair, idx) => (
-          <div className="preview-a4 preview-a4-portrait sr-page-a4" key={pair.id || idx}>
+          <div data-report-flow key={pair.id || idx}>
             <div className="sr-section">
               {idx === 0 && (
                 <div className="sr-appendix-intro-block">
@@ -337,7 +335,7 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
                   <p className="sr-text">
                     Các điểm đánh dấu bằng màu biểu thị những vị trí đặc trưng tương ứng đã được chuyên gia xem xét và xác minh trong quá trình đối chiếu.
                   </p>
-                  <p className="sr-text" style={{ marginBottom: "10px" }}>
+                  <p className="sr-text">
                     Các nhãn hoặc mã số hiển thị trên hình ảnh hiện là mã định danh làm việc và có thể được thay thế bằng số hiệu vật chứng chính thức của Bộ Công an trong phiên bản báo cáo chính thức.
                   </p>
                 </div>
@@ -347,36 +345,55 @@ export const SceneReportContent = forwardRef(function SceneReportContent(
                 Figure {pair.figureNum}. Dấu vết tiềm ẩn {pair.trace_code} - trùng khớp dấu vân tham chiếu {pair.ref_code}
               </div>
 
-              {/* Khung đối chiếu 2 ảnh song song đúng chuẩn ảnh giao diện Verification của bản gốc */}
-              <div className="sr-pair-verification-box">
-                <div className="sr-pv-img-wrap">
-                  <div className="sr-pv-side sr-pv-left">
-                    <img
-                      src={pair.latent_url}
-                      crossOrigin="anonymous"
-                      alt={`Latent ${pair.trace_code}`}
-                    />
-                    <ReportMinutiaeDots dots={pair.latent_dots} />
+              {/* Khung đối chiếu 2 ảnh đúng chuẩn mẫu: 2 khung tách rời, thanh phân cách vs, chấm đỏ/tím và nhãn đỏ */}
+              <div className="sr-match-card-wrap">
+                <div className="sr-match-card">
+                  {/* Cột trái: Ảnh vết hiện trường */}
+                  <div className="sr-match-col">
+                    <div className="sr-match-img-box">
+                      <img
+                        src={pair.latent_url}
+                        crossOrigin="anonymous"
+                        alt={`Latent ${pair.trace_code}`}
+                      />
+                      <ReportMinutiaeDots dots={pair.latent_dots} color="pink" />
+                    </div>
+                    <div className="sr-match-label">
+                      Ảnh hiện trường: {pair.trace_code}
+                    </div>
                   </div>
-                  <div className="sr-pv-side sr-pv-right">
-                    <img
-                      src={pair.candidate_url}
-                      crossOrigin="anonymous"
-                      alt={`Reference ${pair.subject}`}
-                    />
-                    <ReportMinutiaeDots dots={pair.candidate_dots} />
+
+                  {/* Vách ngăn cách dọc với chữ "vs" ở giữa */}
+                  <div className="sr-match-divider" aria-hidden="true">
+                    <span className="sr-match-line" />
+                    <span className="sr-match-vs">vs</span>
+                    <span className="sr-match-line" />
+                  </div>
+
+                  {/* Cột phải: Ảnh vân tay tham chiếu */}
+                  <div className="sr-match-col">
+                    <div className="sr-match-img-box">
+                      <img
+                        src={pair.candidate_url}
+                        crossOrigin="anonymous"
+                        alt={`Reference ${pair.subject}`}
+                      />
+                      <ReportMinutiaeDots dots={pair.candidate_dots} color="pink" />
+                    </div>
+                    <div className="sr-match-label">
+                      Ảnh đối sánh: {pair.ref_code}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            <div className="sr-page-num">{3 + idx}</div>
           </div>
         ))
       )}
-    </div>
+    </AutoPaginatedReport>
   );
 });
+
 
 // ---------- Modal xem trước nhiều trang + Tải PDF + Lưu USB ----------
 export default function SceneMatchReportModal({
@@ -388,50 +405,32 @@ export default function SceneMatchReportModal({
   onClose,
 }) {
   const { t } = useI18n();
-  const a4Ref = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [progressText, setProgressText] = useState("Đang khởi tạo tiến trình tạo báo cáo...");
+  const [pdfBlob, setPdfBlob] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [picker, setPicker] = useState({ open: false, drives: [], resolve: null });
+
+  const urlRef = useRef("");
+  const cancelGenerationRef = useRef(null);
+
+  const caseId = session?.id || session?._id || session?.case_id || "";
+  const matchId = singleMatch?.id || singleMatch?._id || null;
 
   const pickDrive = (drives) => new Promise((resolve) => {
     setPicker({ open: true, drives, resolve });
   });
 
-  const downloadPdf = async () => {
-    const node = a4Ref.current;
-    if (!node) return;
+  const handleSaveToUsb = async (blobToSave = null, fname = "") => {
+    const targetBlob = blobToSave || pdfBlob;
+    if (!targetBlob) return;
     setBusy(true);
     setErr("");
     setMsg("");
-    setProgress({ current: 0, total: 0 });
-    try {
-      const blob = await buildProfilePdfBlob(node, (cur, tot) => {
-        setProgress({ current: cur, total: tot });
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = reportFileName(session?.code || singleMatch?.report_code || "2707_11h30");
-      a.click();
-      URL.revokeObjectURL(url);
-      setMsg(t("pdf.download_success") || "Đã tải file PDF thành công!");
-    } catch (ex) {
-      setErr(ex?.message || "Lỗi tải file PDF");
-    } finally {
-      setBusy(false);
-      setProgress({ current: 0, total: 0 });
-    }
-  };
-
-  const saveToUsb = async () => {
-    const node = a4Ref.current;
-    if (!node) return;
-    setBusy(true);
-    setErr("");
-    setMsg("");
-    setProgress({ current: 0, total: 0 });
     try {
       const info = await usbApi.listWritable();
       const drives = info.drives || [];
@@ -444,60 +443,190 @@ export default function SceneMatchReportModal({
       }
       const chosen = drives.length === 1 ? drives[0] : await pickDrive(drives);
       if (!chosen) return;
-      const blob = await buildProfilePdfBlob(node, (cur, tot) => {
-        setProgress({ current: cur, total: tot });
-      });
-      const saved = await usbApi.saveExport(chosen.path, reportFileName(session?.code || singleMatch?.report_code), blob);
+      const targetName = fname || fileName || reportFileName(session?.code || singleMatch?.report_code || "vuan");
+      const saved = await usbApi.saveExport(chosen.path, targetName, targetBlob);
       setMsg(t("usb.export.success", { path: saved?.path || chosen.path }));
     } catch (ex) {
       setErr(ex?.message || t("scene.report.err_export"));
     } finally {
       setBusy(false);
-      setProgress({ current: 0, total: 0 });
     }
   };
 
+  const downloadPdf = () => {
+    if (!pdfBlob || !pdfUrl) return;
+    const a = document.createElement("a");
+    a.href = pdfUrl;
+    a.download = fileName || reportFileName(session?.code || singleMatch?.report_code || "vuan");
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setMsg(t("pdf.download_success") || "Đã tải file PDF thành công!");
+  };
+
+  const startReportGeneration = useCallback((forceRefresh = false) => {
+    cancelGenerationRef.current?.();
+    setLoading(true);
+    setErr("");
+    setMsg("");
+    setProgressText(forceRefresh ? "Đang tạo lại báo cáo mới..." : "Đang chuẩn bị dữ liệu và xuất báo cáo...");
+
+    let isCancelled = false;
+
+    casesApi.generateSceneReport({
+      caseId,
+      scope,
+      matchId,
+    }).then(async (genRes) => {
+      if (isCancelled) return;
+      const reportId = genRes.report_id;
+      if (!reportId) throw new Error("Không nhận được mã báo cáo từ máy chủ");
+
+      let done = false;
+      let attempts = 0;
+      const maxAttempts = 30;
+
+      while (!isCancelled && !done && attempts < maxAttempts) {
+        attempts++;
+        await new Promise((r) => setTimeout(r, 1200));
+        if (isCancelled) break;
+
+        try {
+          const st = await casesApi.getSceneReportStatus(reportId);
+          if (isCancelled) break;
+
+          if (st.status === "completed") {
+            done = true;
+            const fname = st.filename || reportFileName(session?.code || singleMatch?.report_code || "vuan");
+            setFileName(fname);
+            setProgressText("Đang tải dữ liệu PDF hiển thị...");
+
+            const { blob } = await casesApi.fetchSceneReportPdfBlob(reportId, fname);
+            if (isCancelled) return;
+
+            const objUrl = URL.createObjectURL(blob);
+            if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+            urlRef.current = objUrl;
+
+            setPdfBlob(blob);
+            setPdfUrl(objUrl);
+            setLoading(false);
+
+            if (initialAction === "download") {
+              const a = document.createElement("a");
+              a.href = objUrl;
+              a.download = fname;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              setMsg(t("pdf.download_success") || "Đã tải file PDF thành công!");
+            } else if (initialAction === "usb") {
+              handleSaveToUsb(blob, fname);
+            }
+          } else if (st.status === "error") {
+            done = true;
+            setErr(st.error || "Lỗi tạo file PDF từ máy chủ");
+            setLoading(false);
+          } else {
+            setProgressText(st.progress ? `Đang xử lý xuất báo cáo (${st.progress}%)...` : "Đang tạo báo cáo...");
+          }
+        } catch (pollErr) {
+          done = true;
+          if (!isCancelled) {
+            setErr(pollErr?.message || "Lỗi kiểm tra trạng thái báo cáo");
+            setLoading(false);
+          }
+        }
+      }
+
+      if (attempts >= maxAttempts && !done && !isCancelled) {
+        setErr("Quá thời gian chờ tạo báo cáo");
+        setLoading(false);
+      }
+    }).catch((ex) => {
+      if (!isCancelled) {
+        setErr(ex?.message || "Không thể kết nối đến máy chủ xuất báo cáo");
+        setLoading(false);
+      }
+    });
+
+    const cancel = () => { isCancelled = true; };
+    cancelGenerationRef.current = cancel;
+    return cancel;
+  }, [caseId, scope, matchId, initialAction, session, singleMatch, t]);
+
   useEffect(() => {
-    if (initialAction === "download") {
-      const tm = setTimeout(() => {
-        downloadPdf();
-      }, 350);
-      return () => clearTimeout(tm);
-    }
-    if (initialAction === "usb") {
-      const tm = setTimeout(() => {
-        saveToUsb();
-      }, 350);
-      return () => clearTimeout(tm);
-    }
-  }, [initialAction]);
+    const cancelFn = startReportGeneration(false);
+    return () => {
+      if (cancelFn) cancelFn();
+    };
+  }, [startReportGeneration]);
+
+  useEffect(() => () => {
+    cancelGenerationRef.current?.();
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+  }, []);
 
   return (
     <div className="preview-backdrop">
       <div className="preview-toolbar no-print">
-        <button type="button" className="preview-btn" onClick={downloadPdf} disabled={busy}>
-          {busy
-            ? progress.total > 0
-              ? `Đang tạo trang ${progress.current}/${progress.total}...`
-              : (t("scene.report.saving") || "Đang xuất PDF...")
-            : (t("scene.report.pdf") || "Tải PDF")}
+        <button
+          type="button"
+          className="preview-btn"
+          onClick={downloadPdf}
+          disabled={loading || busy || !pdfBlob}
+        >
+          {loading ? "Đang tải PDF..." : (t("scene.report.pdf") || "Tải PDF")}
         </button>
-        <button type="button" className="preview-btn" onClick={saveToUsb} disabled={busy}>
-          {busy
-            ? progress.total > 0
-              ? `Đang tạo trang ${progress.current}/${progress.total}...`
-              : (t("scene.report.saving") || "Đang lưu USB...")
-            : t("scene.report.save_usb")}
+        <button
+          type="button"
+          className="preview-btn"
+          onClick={() => handleSaveToUsb()}
+          disabled={loading || busy || !pdfBlob}
+        >
+          {busy ? "Đang lưu..." : t("scene.report.save_usb")}
         </button>
-        <button type="button" className="preview-btn preview-close" onClick={onClose} disabled={busy}>
+        <button
+          type="button"
+          className="preview-btn preview-close"
+          onClick={onClose}
+          disabled={busy}
+        >
           {t("common.close")}
         </button>
         {msg && <span className="sr-toolbar-ok">{msg}</span>}
         {err && <span className="sr-toolbar-err">{err}</span>}
       </div>
 
-      <div className="preview-scroll">
-        <SceneReportContent ref={a4Ref} session={session} items={items} scope={scope} singleMatch={singleMatch} />
+      <div className="preview-scroll" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        {loading ? (
+          <div className="sr-pdf-loading-box">
+            <div className="sr-pdf-spinner" />
+            <div className="sr-pdf-loading-title">Báo cáo kết quả so sánh kỹ thuật hình sự</div>
+            <div className="sr-pdf-loading-sub">{progressText}</div>
+          </div>
+        ) : err ? (
+          <div className="sr-pdf-error-box">
+            <div style={{ fontSize: "16px", fontWeight: "600" }}>Không thể tạo báo cáo</div>
+            <div style={{ fontSize: "13.5px", color: "#cbd5e1" }}>{err}</div>
+            <button
+              type="button"
+              className="preview-btn"
+              onClick={() => startReportGeneration(true)}
+              style={{ marginTop: "10px" }}
+            >
+              Thử lại
+            </button>
+          </div>
+        ) : pdfUrl ? (
+          <div className="sr-pdf-iframe-container">
+            <iframe
+              src={pdfUrl}
+              className="sr-pdf-iframe"
+              title="Báo cáo kết quả đối sánh"
+            />
+          </div>
+        ) : null}
       </div>
 
       {picker.open && (

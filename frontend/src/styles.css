@@ -8699,6 +8699,13 @@ textarea.input {
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.sync-table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .sync-table-wrap .session-list-toolbar {
   display: flex;
@@ -8708,6 +8715,8 @@ textarea.input {
   padding: 8px 14px;
   background: rgba(53, 216, 255, 0.04);
   border-top: 1px solid var(--border);
+  margin-top: auto;
+  flex-shrink: 0;
 }
 .sync-table-wrap .session-list-total {
   font-size: 12px;
@@ -8747,7 +8756,10 @@ textarea.input {
 }
 
 .sync-table thead th {
-  background: rgba(53, 216, 255, 0.06);
+  background: rgba(8, 22, 46, 0.95);
+  position: sticky;
+  top: 0;
+  z-index: 2;
   text-align: left;
   padding: 12px 14px;
   font-size: 12px;

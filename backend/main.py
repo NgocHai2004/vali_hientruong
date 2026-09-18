@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import io
 import re
@@ -17,8 +18,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File, Form, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
+from services.scene_report_service import (
+    build_scene_report_data,
+    render_html_report,
+    generate_scene_report_pdf,
+)
 from pydantic import BaseModel, Field
 from jose import jwt, JWTError
 import bcrypt
@@ -68,12 +74,13 @@ def _env_bool(name: str, default: bool = True) -> bool:
 FEATURE_CCCD_READER = _env_bool("FEATURE_CCCD_READER")
 FEATURE_WEIGHT_SCALE = _env_bool("FEATURE_WEIGHT_SCALE")
 FEATURE_HEIGHT_YOLO = _env_bool("FEATURE_HEIGHT_YOLO")
+FEATURE_USB_DONGLE = _env_bool("FEATURE_USB_DONGLE", default=False)
 
 # Doc qua _env_str_from_dotenv (khong phai os.getenv thuong): backend co the
 # duoc start tu shell KHONG load .env (vd `python run_backend.py`). Neu de
 # default cu thi instance nay am tham noi sang mongod 27017 cua App_CCCD.
 MONGO_URL = _env_str_from_dotenv("MONGO_URL") or "mongodb://localhost:27018"
-DB_NAME = os.getenv("DB_NAME", "app_cccd")
+DB_NAME = _env_str_from_dotenv("DB_NAME") or os.getenv("DB_NAME", "app_cccd")
 JWT_SECRET = _env_str_from_dotenv("JWT_SECRET") or "change-me-in-production-please-abc123xyz"
 JWT_ALGO = "HS256"
 TOKEN_TTL_MINUTES = 60 * 8
@@ -740,7 +747,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+class UploadStaticFiles(StaticFiles):
+    async def get_response(self, path, scope):
+        # Legacy scene reports were public; new reports live outside uploads.
+        if os.path.basename(path).startswith("Bao_cao_doi_sanh_"):
+            raise HTTPException(404, "Not found")
+        return await super().get_response(path, scope)
+
+
+app.mount("/uploads", UploadStaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.get("/api/health")
@@ -821,6 +836,9 @@ async def dongle_verify(user: dict = Depends(get_current_user)):
     - 401  : không phát hiện USB dongle
     - 503  : usb_service không phản hồi (không đủ căn cứ logout)
     """
+    if not FEATURE_USB_DONGLE:
+        return {"ok": True, "drive": "BYPASS", "user": user["username"]}
+
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(f"{USB_SERVICE_URL}/api/usb/verify")
@@ -2718,6 +2736,54 @@ async def update_scene_trace(
     return _s_scene(doc)
 
 
+@app.delete("/api/scene/traces")
+async def delete_scene_traces_by_case(
+    request: Request,
+    case_id: str = Query(..., min_length=1),
+    user: dict = Depends(get_current_user),
+):
+    """Xóa toàn bộ dấu vết và kết quả đối sánh thuộc một vụ án."""
+    case_doc = await _scene_case_or_400(case_id)
+    _ensure_case_editable(case_doc)
+    case_query = _case_id_query(case_doc)
+    traces = [
+        doc async for doc in db.scene_traces.find(
+            {"case_id": case_query}, {"_id": 1, "url": 1}
+        )
+    ]
+    trace_ids = [doc["_id"] for doc in traces]
+
+    trace_result = await db.scene_traces.delete_many({"case_id": case_query})
+    match_result = await db.scene_matches.delete_many({"case_id": case_query})
+    if trace_ids:
+        # Dọn cả dữ liệu cũ thiếu/sai case_id nhưng vẫn liên kết đúng trace_id.
+        extra = await db.scene_matches.delete_many({"trace_id": {"$in": trace_ids}})
+        deleted_matches = match_result.deleted_count + extra.deleted_count
+    else:
+        deleted_matches = match_result.deleted_count
+
+    for doc in traces:
+        _delete_scene_file(doc.get("url"))
+
+    await _log(
+        request,
+        user,
+        "delete",
+        "scene_traces",
+        case_doc.get("code", case_id),
+        case_id=case_doc["_id"],
+        data={
+            "deleted_traces": trace_result.deleted_count,
+            "deleted_matches": deleted_matches,
+        },
+    )
+    return {
+        "ok": True,
+        "deleted_traces": trace_result.deleted_count,
+        "deleted_matches": deleted_matches,
+    }
+
+
 @app.delete("/api/scene/traces/{trace_id}")
 async def delete_scene_trace(
     trace_id: str,
@@ -2923,9 +2989,17 @@ async def _match_trace(trace_doc: dict, case_doc: dict) -> dict:
             })
 
     pairs.sort(key=lambda p: p["score"], reverse=True)
+    # Dấu vết có thể bị xóa trong lúc HBIE đang chạy. Không ghi lại kết quả mồ
+    # côi sau thao tác xóa một ảnh hoặc xóa toàn bộ ảnh của vụ án.
+    if not await db.scene_traces.find_one({"_id": trace_doc["_id"]}, {"_id": 1}):
+        await db.scene_matches.delete_many({"trace_id": trace_doc["_id"]})
+        return {"count": 0, "best": 0, "cancelled": True}
     await db.scene_matches.delete_many({"trace_id": trace_doc["_id"]})
     if pairs:
         await db.scene_matches.insert_many(pairs)
+    if not await db.scene_traces.find_one({"_id": trace_doc["_id"]}, {"_id": 1}):
+        await db.scene_matches.delete_many({"trace_id": trace_doc["_id"]})
+        return {"count": 0, "best": 0, "cancelled": True}
     best = pairs[0] if pairs else None
     await db.scene_traces.update_one(
         {"_id": trace_doc["_id"]},
@@ -3146,6 +3220,201 @@ async def rematch_scene_case_by_id(
 async def scene_hbie_health(user: dict = Depends(get_current_user)):
     """Chẩn đoán kết nối HBIE — dùng khi đối sánh báo lỗi mà chưa rõ do đâu."""
     return {**await hbie_service.health(), "config": hbie_service.config()}
+
+
+# ==================== SCENE REPORT GENERATION (A4 Landscape PDF) ====================
+class SceneReportGenerateRequest(BaseModel):
+    case_id: Optional[str] = None
+    scope: Optional[str] = "all"
+    match_id: Optional[str] = None
+
+
+SCENE_REPORTS_DIR = os.path.join(os.path.dirname(UPLOAD_DIR), "private_reports")
+
+_report_jobs: dict[str, dict] = {}
+_report_sem = asyncio.Semaphore(2)
+
+
+async def _run_generate_report_task(
+    report_id: str,
+    case_id: Optional[str],
+    scope: str,
+    match_id: Optional[str],
+    user: Optional[dict],
+    report_data: dict,
+):
+    async with _report_sem:
+        try:
+            _report_jobs[report_id]["status"] = "generating"
+            _report_jobs[report_id]["progress"] = 30
+            try:
+                await db.report_jobs.update_one(
+                    {"_id": report_id},
+                    {"$set": {"status": "generating", "progress": 30}}
+                )
+            except Exception:
+                pass
+            pdf_path = await generate_scene_report_pdf(
+                db=db,
+                case_id=case_id,
+                scope=scope,
+                match_id=match_id,
+                current_user=user,
+                upload_dir=UPLOAD_DIR,
+                reports_dir=SCENE_REPORTS_DIR,
+                report_data=report_data,
+            )
+            fname = os.path.basename(pdf_path)
+            res_url = f"/api/scene/reports/{report_id}/pdf"
+            _report_jobs[report_id].update({
+                "status": "completed",
+                "progress": 100,
+                "pdf_path": pdf_path,
+                "filename": fname,
+                "url": res_url,
+            })
+            try:
+                await db.report_jobs.update_one(
+                    {"_id": report_id},
+                    {"$set": {
+                        "status": "completed",
+                        "progress": 100,
+                        "pdf_path": pdf_path,
+                        "filename": fname,
+                        "url": res_url,
+                    }}
+                )
+            except Exception:
+                pass
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            err_text = f"{type(e).__name__}: {str(e)}" if str(e) else repr(e)
+            _report_jobs[report_id]["status"] = "error"
+            _report_jobs[report_id]["error"] = err_text
+            try:
+                await db.report_jobs.update_one(
+                    {"_id": report_id},
+                    {"$set": {"status": "error", "error": err_text}}
+                )
+            except Exception:
+                pass
+
+
+@app.post("/api/scene/reports/generate")
+async def generate_scene_report_endpoint(
+    body: SceneReportGenerateRequest,
+    user: dict = Depends(get_current_user),
+):
+    report_data = await build_scene_report_data(
+        db, case_id=body.case_id, scope=body.scope or "all", match_id=body.match_id,
+        current_user=user, upload_dir=UPLOAD_DIR,
+    )
+    import uuid
+    report_id = uuid.uuid4().hex[:12]
+    job_data = {
+        "_id": report_id,
+        "id": report_id,
+        "owner": user["username"],
+        "case_id": body.case_id,
+        "scope": body.scope or "all",
+        "match_id": body.match_id,
+        "status": "pending",
+        "progress": 10,
+        "created_at": datetime.utcnow().isoformat(),
+        "pdf_path": None,
+        "filename": None,
+        "url": None,
+        "error": None,
+    }
+    _report_jobs[report_id] = job_data
+    try:
+        await db.report_jobs.insert_one(dict(job_data))
+    except Exception:
+        pass
+    asyncio.create_task(
+        _run_generate_report_task(
+            report_id=report_id,
+            case_id=body.case_id,
+            scope=body.scope or "all",
+            match_id=body.match_id,
+            user=user,
+            report_data=report_data,
+        )
+    )
+    return {"report_id": report_id, "status": "pending", "cached": False}
+
+
+@app.get("/api/scene/reports/{report_id}/status")
+async def get_scene_report_status_endpoint(
+    report_id: str,
+    user: dict = Depends(get_current_user),
+):
+    job = _report_jobs.get(report_id)
+    if not job:
+        try:
+            job = await db.report_jobs.find_one({"_id": report_id})
+            if job:
+                _report_jobs[report_id] = job
+        except Exception:
+            pass
+    if not job or job.get("owner") != user["username"]:
+        raise HTTPException(404, "Không tìm thấy phiên xuất báo cáo")
+    return {
+        "report_id": report_id,
+        "status": job["status"],
+        "progress": job.get("progress", 0),
+        "url": job.get("url"),
+        "filename": job.get("filename"),
+        "error": job.get("error"),
+    }
+
+
+@app.get("/api/scene/reports/{report_id}/pdf")
+async def get_scene_report_pdf_endpoint(
+    report_id: str,
+    download: Optional[int] = 0,
+    user: dict = Depends(get_current_user),
+):
+    job = _report_jobs.get(report_id)
+    if not job:
+        try:
+            job = await db.report_jobs.find_one({"_id": report_id})
+            if job:
+                _report_jobs[report_id] = job
+        except Exception:
+            pass
+    if not job or job.get("owner") != user["username"] or job.get("status") != "completed" or not job.get("pdf_path"):
+        raise HTTPException(404, "Báo cáo chưa hoàn thành hoặc không tồn tại")
+    pdf_path = job["pdf_path"]
+    if not os.path.isfile(pdf_path):
+        raise HTTPException(404, "File PDF không còn trên máy chủ")
+
+    filename = job.get("filename") or os.path.basename(pdf_path)
+    disposition_type = "attachment" if download else "inline"
+    return FileResponse(
+        path=pdf_path,
+        media_type="application/pdf",
+        filename=filename,
+        content_disposition_type=disposition_type,
+    )
+
+
+@app.get("/api/scene/reports/preview-data")
+async def preview_scene_report_data_endpoint(
+    case_id: Optional[str] = None,
+    scope: Optional[str] = "all",
+    match_id: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    return await build_scene_report_data(
+        db=db,
+        case_id=case_id,
+        scope=scope,
+        match_id=match_id,
+        current_user=user,
+        upload_dir=UPLOAD_DIR,
+    )
 
 
 # ==================== WEIGHT SCALE (push từ máy cân ngoài + WS broadcast) ====================

@@ -1,10 +1,10 @@
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import { useI18n } from "./i18n";
 import CaseFormModal from "./CaseFormModal";
 import {
-  IcChevRight, IcInfo, IcPageNext, IcPagePrev, IcPencil, IcPlus,
-  IcReanalyze, IcSearch, IcTick, IcTrash,
+  IcChevRight, IcInfo, IcPencil, IcPlus,
+  IcReanalyze, IcSearch, IcTrash,
 } from "./sceneMatchIcons";
 
 // Trang quản lý vụ án — bước đầu của tab Dấu vết hiện trường.
@@ -18,13 +18,6 @@ import {
 // khớp, không để bấm rồi mới báo lỗi.
 const PAGE_SIZE = 10;
 const SK = [0, 1, 2, 3, 4];   // 5 hàng giả lúc tải, đủ giữ chiều cao bảng
-
-// Chỉ in trang đầu, trang cuối và ±1 quanh trang hiện tại — total có thể lên
-// hàng trăm trang, in hết là vỡ hàng nút phân trang.
-function pageWindow(page, totalPages) {
-  return Array.from({ length: totalPages }, (_, i) => i + 1)
-    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1);
-}
 
 // 3 lựa chọn thì segmented bấm 1 nhịp là xong, nhanh hơn <select> 2 nhịp.
 const STATUSES = [
@@ -77,8 +70,6 @@ export default function CasesPage({ role = "user", onPick, onOpenCase }) {
   }, [qLive]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const to = Math.min(page * PAGE_SIZE, total);
 
   const closeCase = async (c) => {
     if (!window.confirm(t("case.confirm.close", { code: c.code, n: c.detainee_count ?? 0 }))) return;
@@ -261,16 +252,6 @@ export default function CasesPage({ role = "user", onPick, onOpenCase }) {
                             </button>
                             <button
                               type="button"
-                              className="smp-icon-btn"
-                              disabled={busy}
-                              onClick={() => closeCase(c)}
-                              aria-label={t("case.act.close", { name })}
-                              title={t("case.act.close_short")}
-                            >
-                              <IcTick />
-                            </button>
-                            <button
-                              type="button"
                               className="smp-icon-btn scp-danger"
                               disabled={busy}
                               onClick={() => removeCase(c)}
@@ -302,37 +283,20 @@ export default function CasesPage({ role = "user", onPick, onOpenCase }) {
           )}
         </div>
 
-        <div className="smp-pg">
-          <div />
-          <div className="smp-pg-mid">
+        <div className="session-list-toolbar">
+          <div className="session-list-total">{t("common.total", { n: total })}</div>
+          <div className="pagination">
             <button
               type="button"
               disabled={page <= 1 || loading}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              aria-label={t("common.prev")}
-            ><IcPagePrev /></button>
-            {pageWindow(page, totalPages).map((p, i, arr) => (
-              <Fragment key={p}>
-                {i > 0 && p - arr[i - 1] > 1 && <span className="scp-pg-gap">…</span>}
-                <button
-                  type="button"
-                  className={p === page ? "on" : ""}
-                  aria-current={p === page ? "page" : undefined}
-                  onClick={() => setPage(p)}
-                >{p}</button>
-              </Fragment>
-            ))}
+            >{t("common.prev")}</button>
+            <span aria-live="polite">{t("common.page_of", { page, total: totalPages })}</span>
             <button
               type="button"
               disabled={page >= totalPages || loading}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              aria-label={t("common.next")}
-            ><IcPageNext /></button>
-          </div>
-          <div className="smp-pg-right">
-            <span className="smp-dim" aria-live="polite">
-              {t("smp.showing", { from, to, total })}
-            </span>
+            >{t("common.next")}</button>
           </div>
         </div>
       </section>

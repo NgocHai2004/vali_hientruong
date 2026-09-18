@@ -489,9 +489,9 @@ label.smp-drop.on {
 }
 
 .smp-tr-row {
-  /* 6 cot: thumb | ma+ten file | vi tri dau vet | thoi gian | nut | tick. */
+  /* 5 cot: thumb | ma+ten file | vi tri dau vet | thoi gian | nut. */
   display: grid;
-  grid-template-columns: 48px minmax(0, 1.2fr) minmax(0, 1fr) 124px 90px 24px;
+  grid-template-columns: 48px minmax(0, 1.2fr) minmax(0, 1fr) 124px 90px;
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
@@ -501,15 +501,11 @@ label.smp-drop.on {
   flex: 0 0 auto;
   border: 1.5px solid #1b3355;
   background: rgba(11, 24, 44, .7);
-  cursor: pointer;
+  cursor: default;
 }
 
 .smp-tr-row:hover {
   border-color: #3a5f8c;
-}
-
-.smp-tr-row.on {
-  border-color: #2272e8;
 }
 
 .smp-tr-meta {
@@ -543,12 +539,6 @@ label.smp-drop.on {
 .smp-tr-time {
   text-align: right;
   padding-right: 4px;
-}
-
-.smp-check {
-  color: #2272e8;
-  font-weight: 700;
-  text-align: right;
 }
 
 /* Hồ sơ đối tượng */
@@ -738,33 +728,6 @@ label.smp-drop.on {
   height: 100%;
   /* position: popover cua nut Bo loc / menu the can containing block o day. */
   position: relative;
-}
-
-/* Dấu tích chọn ảnh — tròn xanh như design. */
-.smp-tick-dot {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #2272e8;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-/* Dashboard.jsx co rule global `svg { width:20px; height:20px; stroke:currentColor;
-   stroke-width:1.9 }`. CSS thang HTML attribute nen IcCheck bi ghi de CA 3 thu:
-     - width/height="12" -> 20px  = kin het vong tron 20px
-     - stroke="#fff"     -> currentColor, ma .smp-check co color:#2272e8
-                            => dau tich XANH tren nen XANH = vo hinh (loi o list view)
-     - strokeWidth="3"   -> 1.9px = net qua mo
-   Ep lai ca 3 ngay trong dot, khong sua rule global de khong anh huong ca app. */
-.smp-tick-dot>svg {
-  width: 12px;
-  height: 12px;
-  flex: 0 0 auto;
-  stroke: #fff;
-  stroke-width: 3;
 }
 
 .smp-sub-row-right {
@@ -2195,17 +2158,19 @@ label.smp-drop.on {
 }
 
 .sr-page-a4 {
-  width: 210mm !important;
-  min-height: 297mm !important;
-  height: 297mm !important;
-  max-width: 210mm !important;
+  width: 297mm !important;
+  min-height: 210mm !important;
+  height: 210mm !important;
+  max-height: 210mm !important;
+  max-width: 297mm !important;
   background: #ffffff !important;
-  color: #111827 !important;
-  padding: 14mm 16mm 20mm 16mm !important;
+  color: #000000 !important;
+  padding: 12.7mm 12.7mm 22mm 12.7mm !important;
   box-sizing: border-box !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important;
+  gap: 0 !important;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45) !important;
   border-radius: 4px !important;
   font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
@@ -2213,27 +2178,56 @@ label.smp-drop.on {
   overflow: hidden !important;
 }
 
-.sr-sec-banner {
-  font-size: 7.5pt !important;
-  font-style: italic !important;
-  color: #4b5563 !important;
+/* Footer thông báo bảo mật + số trang ở cuối mỗi trang */
+.sr-page-footer {
+  position: absolute !important;
+  bottom: 5mm !important;
+  left: 12.7mm !important;
+  right: 12.7mm !important;
+  box-sizing: border-box !important;
+}
+
+/* Automatic pagination measures this body against the actual footer. */
+.sr-auto-page .sr-auto-body {
+  flex: none;
+  display: flow-root;
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.sr-auto-body .sr-flow-block {
+  display: flow-root;
+}
+
+.sr-flow-continuation > ul > li:first-child::before,
+.sr-flow-continuation > ol > li:first-child::before {
+  content: none !important;
+}
+
+.sr-sec-notice {
+  font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
+  font-size: 12.5pt !important;
+  font-weight: normal !important;
+  font-style: normal !important;
   line-height: 1.35 !important;
-  border-bottom: 1px solid #cbd5e1 !important;
-  padding-bottom: 5px !important;
-  margin-bottom: 12px !important;
+  color: #000000 !important;
   text-align: justify !important;
+  margin-bottom: 2px !important;
+}
+
+.sr-sec-notice-tag {
+  color: #003865 !important;
+  font-weight: 700 !important;
 }
 
 .sr-page-num {
-  position: absolute !important;
-  bottom: 8mm !important;
-  right: 16mm !important;
+  font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
   font-size: 10pt !important;
-  font-weight: 700 !important;
-  color: #111827 !important;
-  margin: 0 !important;
-  line-height: 1 !important;
+  font-weight: normal !important;
+  color: #000000 !important;
   text-align: right !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
 }
 
 /* Header Top Page 1 */
@@ -2245,9 +2239,9 @@ label.smp-drop.on {
 
 .sr-org-title {
   font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
-  font-size: 11pt !important;
+  font-size: 14pt !important;
   font-weight: 700 !important;
-  color: #0c3e72 !important;
+  color: #003865 !important;
   letter-spacing: 0.5px !important;
   text-align: left !important;
   margin: 0 0 3px 0 !important;
@@ -2258,7 +2252,7 @@ label.smp-drop.on {
 .sr-header-line {
   width: 100% !important;
   height: 3.5px !important;
-  background: #0c3e72 !important;
+  background: #003865 !important;
   margin: 0 !important;
   border: none !important;
 }
@@ -2266,186 +2260,254 @@ label.smp-drop.on {
 /* Title Block Page 1 */
 .sr-title-block {
   text-align: center !important;
-  margin: 8px 0 10px 0 !important;
+  margin: 6px 0 8px 0 !important;
   width: 100% !important;
 }
 
 .sr-main-title {
   font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
-  font-size: 15pt !important;
-  font-weight: 800 !important;
-  color: #0c3e72 !important;
+  font-size: 20pt !important;
+  font-weight: 700 !important;
+  color: #003865 !important;
   text-transform: uppercase !important;
   margin: 0 0 3px 0 !important;
   letter-spacing: 0.4px !important;
   text-align: center !important;
-  line-height: 1.3 !important;
+  line-height: 1.25 !important;
 }
 
 .sr-eng-title {
   font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
-  font-size: 10pt !important;
-  font-weight: 500 !important;
-  color: #334155 !important;
-  margin: 0 0 6px 0 !important;
+  font-size: 14pt !important;
+  font-weight: 400 !important;
+  color: #505050 !important;
+  margin: 0 0 4px 0 !important;
   text-align: center !important;
   line-height: 1.3 !important;
 }
 
 .sr-date-loc {
   font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
-  font-size: 9.5pt !important;
-  color: #111827 !important;
+  font-size: 14pt !important;
+  color: #000000 !important;
   text-align: right !important;
-  margin: 4px 0 10px 0 !important;
+  margin: 2px 0 8px 0 !important;
 }
 
 .sr-section {
   flex: 0 0 auto !important;
   width: 100% !important;
-  margin-bottom: 8px !important;
+  margin-bottom: 6px !important;
 }
 
 .sr-section-h {
-  font-size: 10.5pt !important;
-  font-weight: 800 !important;
+  font-size: 14pt !important;
+  font-weight: 700 !important;
   color: #000000 !important;
   text-transform: uppercase !important;
-  margin: 8px 0 3px 0 !important;
+  margin: 22px 0 8px 0 !important;
+  line-height: 1.3 !important;
 }
 
 .sr-field-line {
-  font-size: 10pt !important;
-  line-height: 1.4 !important;
-  color: #111827 !important;
+  font-size: 14pt !important;
+  line-height: 1.35 !important;
+  color: #000000 !important;
   margin-bottom: 2px !important;
 }
 
 .sr-sub-title {
-  font-size: 10pt !important;
+  font-size: 14pt !important;
   font-weight: 700 !important;
-  color: #111827 !important;
+  color: #000000 !important;
   margin: 6px 0 2px 0 !important;
+  line-height: 1.3 !important;
 }
 
 .sr-text {
-  font-size: 10pt !important;
-  line-height: 1.45 !important;
-  color: #111827 !important;
+  font-size: 13.6pt !important;
+  line-height: 1.35 !important;
+  color: #000000 !important;
   margin: 0 0 4px 0 !important;
   text-align: justify !important;
 }
 
 .sr-dash-list {
-  list-style: none;
-  margin: 2px 0 6px 0 !important;
-  padding: 0 !important;
-  font-size: 10pt !important;
-  line-height: 1.4 !important;
-  color: #111827 !important;
+  list-style: none !important;
+  margin: 2px 0 5px 0 !important;
+  padding: 0 0 0 20px !important;
+  font-size: 13.6pt !important;
+  line-height: 1.35 !important;
+  color: #000000 !important;
 }
 
 .sr-dash-list li {
-  position: relative;
-  padding-left: 14px;
+  position: relative !important;
+  padding-left: 14px !important;
   margin-bottom: 2px !important;
 }
 
 .sr-dash-list li::before {
-  content: "- ";
-  position: absolute;
-  left: 0;
-  font-weight: 700;
+  content: "- " !important;
+  position: absolute !important;
+  left: 0 !important;
+  font-weight: 400 !important;
 }
 
 .sr-bullet-list {
-  list-style: none;
-  margin: 2px 0 6px 0 !important;
+  list-style: none !important;
+  margin: 2px 0 5px 0 !important;
   padding: 0 !important;
-  font-size: 10pt !important;
-  line-height: 1.4 !important;
-  color: #111827 !important;
+  font-size: 13.6pt !important;
+  line-height: 1.35 !important;
+  color: #000000 !important;
   text-align: justify !important;
 }
 
 .sr-bullet-list li {
-  position: relative;
-  padding-left: 16px;
-  margin-bottom: 3px !important;
+  position: relative !important;
+  padding-left: 18px !important;
+  margin-bottom: 4px !important;
 }
 
 .sr-bullet-list li::before {
-  content: "● ";
-  position: absolute;
-  left: 0;
-  top: 0;
-  font-size: 8pt;
-  color: #1e3a8a;
+  content: "● " !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  font-size: 10pt !important;
+  color: #000000 !important;
 }
 
 /* ---------- Phụ lục A ---------- */
 .sr-appendix-intro-block {
-  margin-bottom: 12px;
+  margin-bottom: 4px !important;
 }
 
 .sr-appendix-main-title {
-  font-size: 11pt;
-  font-weight: 800;
-  color: #1e3a8a !important;
-  text-transform: uppercase;
-  margin: 4px 0 8px;
-  letter-spacing: 0.3px;
+  font-size: 14pt !important;
+  font-weight: 700 !important;
+  color: #000000 !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  margin: 0 0 5px 0 !important;
+  letter-spacing: 0.3px !important;
+  line-height: 1.3 !important;
 }
 
 .sr-figure-title {
-  font-size: 10pt;
-  font-weight: 700;
-  color: #111827 !important;
-  margin: 10px 0 10px;
+  font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
+  font-size: 13.6pt !important;
+  font-weight: normal !important;
+  font-style: italic !important;
+  text-align: center !important;
+  color: #505050 !important;
+  margin: 4px 0 6px 0 !important;
 }
 
+/* ---------- Khung đối chiếu cặp vân tay Phụ lục A (Giao diện vs) ---------- */
+.sr-match-card-wrap,
 .sr-pair-verification-box {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  margin: 10px 0;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin: 2px 0 4px 0 !important;
 }
 
-.sr-pv-img-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid #64748b;
-  padding: 8px;
-  background: #000000;
-  border-radius: 4px;
-  width: 100%;
-  max-width: 175mm;
-  height: 112mm;
-  box-sizing: border-box;
+.sr-match-card {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  max-width: 250mm !important;
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 6px 12px 5px !important;
+  box-sizing: border-box !important;
+  box-shadow: none !important;
 }
 
-.sr-pv-side {
-  position: relative;
-  width: 50%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: #0f172a;
-  border-radius: 2px;
+.sr-match-col {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  min-width: 0 !important;
 }
 
-.sr-pv-side img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.sr-match-img-box {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 108mm !important;
+  height: 80mm !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
 }
 
+.sr-page-a4-subsequent .sr-match-img-box {
+  height: 100mm !important;
+}
+
+.sr-match-img-box img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+.sr-match-divider {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 35mm !important;
+  flex-shrink: 0 !important;
+  margin: 0 8px 18px 8px !important;
+}
+
+.sr-match-line {
+  width: 1px !important;
+  flex: 1 !important;
+  background: #cbd5e1 !important;
+  margin: 3px 0 !important;
+}
+
+.sr-match-vs {
+  font-family: system-ui, -apple-system, sans-serif !important;
+  font-size: 11pt !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  text-transform: lowercase !important;
+  padding: 2px 0 !important;
+  line-height: 1 !important;
+}
+
+.sr-match-label {
+  margin-top: 5px !important;
+  font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
+  font-size: 10pt !important;
+  font-weight: normal !important;
+  font-style: italic !important;
+  color: #000000 !important;
+  text-align: center !important;
+  line-height: 1.3 !important;
+  width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Minutiae dots overlay */
 .sr-fig-dots {
   position: absolute;
   inset: 0;
@@ -2459,9 +2521,20 @@ label.smp-drop.on {
   height: 5px;
   margin: -2.5px 0 0 -2.5px;
   border-radius: 50%;
-  background: #ff2d87 !important;
   border: 1px solid #ffffff !important;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.85) !important;
+}
+
+.sr-fig-dot-red {
+  background: #ef4444 !important; /* Chấm đỏ cho vết hiện trường */
+}
+
+.sr-fig-dot-purple {
+  background: #7c3aed !important; /* Chấm tím cho vân tay đối sánh */
+}
+
+.sr-fig-dot-pink {
+  background: #ec4899 !important;
 }
 
 .sr-fig-dot-num {
@@ -2648,24 +2721,6 @@ label.smp-drop.on {
   font-size: 13px;
 }
 
-/* Nut 3 cham (chon tat ca) canh nut Bo loc: vuong, cao BANG nut Bo loc (40px)
-   de 2 nut thang hang. .smp-trg co padding 9px 14px cho nut co chu, o day bo
-   padding ngang di vi chi co icon. */
-.smp-trg-bulk {
-  justify-content: center;
-  gap: 0;
-  width: 40px;
-  flex: 0 0 40px;
-  padding: 9px 0;
-}
-
-/* IcDots dat fill="#7f95b5" trong SVG, nhung rule global `svg { stroke: currentColor }`
-   cua Dashboard.jsx ep size 20px -> giu 16px cho khop icon khac tren toolbar. */
-.smp-trg-bulk>svg {
-  width: 16px;
-  height: 16px;
-}
-
 /* Dropdown "Tất cả đối tượng". */
 .smp-trg-subj {
   justify-content: space-between;
@@ -2709,14 +2764,6 @@ label.smp-drop.on {
 
 .smp-pop-tsort {
   width: 200px;
-}
-
-/* PHAI khop voi prop width={196} cua PopMenu: place() tinh left = btn.right - W + 2
-   theo con so JS, con be ngang that lai do CSS quyet dinh. Khong co rule nay thi
-   popover roi ve min-width 168px (cua .smp-menu-pop) => JS can le cho 196 nhung
-   box chi 168 => lech 28px sang trai. Doi 1 so thi doi ca 2 cho. */
-.smp-pop-bulk {
-  width: 196px;
 }
 
 /* Design không đặt max-height, nhưng ở đây danh sách là 1 + 9 đối tượng
@@ -3253,14 +3300,6 @@ textarea.smp-modal-in {
   box-sizing: border-box;
 }
 
-.smp-panel-trace .smp-trg-bulk {
-  height: 32px;
-  width: 32px;
-  padding: 0;
-  flex: 0 0 32px;
-  box-sizing: border-box;
-}
-
 .smp-panel-trace .smp-btn-primary {
   height: 32px;
   padding: 0 12px;
@@ -3759,6 +3798,19 @@ textarea.smp-modal-in {
   overflow: auto;
 }
 
+/* Trang thai tai/rong chiem tron than bang va nam chinh giua. */
+.smp-mt-body > .smp-mt-status {
+  grid-row: 1 / -1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  color: var(--smp-dim);
+  text-align: center;
+}
+
 /* Ke doc chay xuyen ca o trong -> khung bang lien mach nhu design. */
 .smp-mt-row:last-child {
   border-bottom: 1px solid #16304f;
@@ -4022,4 +4074,69 @@ textarea.smp-modal-in {
     height: auto;
     max-height: 420px;
   }
+}
+
+/* ============ Báo cáo đối sánh hiện trường (BE Chromium Headless PDF) ============ */
+.sr-pdf-loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 420px;
+  width: 100%;
+  color: #f1f5f9;
+  gap: 16px;
+  background: #0b1324;
+}
+
+.sr-pdf-spinner {
+  width: 52px;
+  height: 52px;
+  border: 4px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+  animation: lg-spin 0.8s linear infinite;
+}
+
+.sr-pdf-loading-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.sr-pdf-loading-sub {
+  font-size: 13.5px;
+  color: #94a3b8;
+}
+
+.sr-pdf-error-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 420px;
+  width: 100%;
+  color: #f87171;
+  gap: 14px;
+  background: #0b1324;
+  padding: 24px;
+  text-align: center;
+}
+
+.sr-pdf-iframe-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #334155;
+  overflow: hidden;
+}
+
+.sr-pdf-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #ffffff;
 }

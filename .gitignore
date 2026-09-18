@@ -46,6 +46,7 @@ mongo_portable/
 backend/*.log
 backend/*.log.*
 backend/uvicorn.*.log
+backend/uploads/reports/*.pdf
 
 # ===== Frontend runtime =====
 frontend/*.log
@@ -123,3 +124,5 @@ desktop.ini
 $RECYCLE.BIN/
 
 electron/app.asar
+
+backend/private_reports/
