@@ -3,6 +3,7 @@ import { api, cccdApi, weightApi } from "./api";
 import { notify } from "./notifications";
 import { useI18n } from "./i18n";
 import { useFeatures } from "./lib/features";
+import Button from "./components/Button";
 
 const emptyForm = {
   full_name: "",
@@ -315,9 +316,9 @@ export default function DetaineeForm({ initial, cells, onClose, onSaved }) {
 
           <div className="modal-actions">
             <button type="button" className="btn-ghost" onClick={onClose}>{t("common.cancel")}</button>
-            <button type="submit" className="btn-primary" disabled={saving}>
+            <Button type="submit" disabled={saving}>
               {saving ? t("common.saving") : initial ? t("detainee.form.update") : t("detainee.form.save")}
-            </button>
+            </Button>
           </div>
         </form>
 
@@ -347,8 +348,7 @@ export default function DetaineeForm({ initial, cells, onClose, onSaved }) {
                 <button className="btn-ghost" onClick={() => setDupCheck(null)}>
                   {t("detainee.dup.review")}
                 </button>
-                <button
-                  className="btn-primary"
+                <Button
                   onClick={() => {
                     setConfirmDup(true);
                     setDupCheck(null);
@@ -356,7 +356,7 @@ export default function DetaineeForm({ initial, cells, onClose, onSaved }) {
                   }}
                 >
                   {t("detainee.dup.save_anyway")}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

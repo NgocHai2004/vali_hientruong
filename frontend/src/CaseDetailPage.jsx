@@ -4,6 +4,7 @@ import { notify } from "./notifications";
 import { useI18n } from "./i18n";
 import UsbDrivePickerModal from "./UsbDrivePickerModal";
 import { toast } from "./Toast";
+import Button from "./components/Button";
 
 // Hồ sơ 1 vụ án: thông tin vụ + danh sách hồ sơ can phạm thuộc vụ đó.
 // Thay cho SessionDetailPage. Khác biệt so với phiên làm việc cũ:
@@ -171,9 +172,9 @@ export default function CaseDetailPage({ caseId, role, onBack, onAddDetainee, on
             <>
               {/* Admin không thu nhận hồ sơ (backend cũng chặn) → ẩn nút. */}
               {!isAdmin && (
-                <button className="btn-primary" onClick={() => onAddDetainee && onAddDetainee(caseDoc.id)}>
+                <Button onClick={() => onAddDetainee && onAddDetainee(caseDoc.id)}>
                   {t("case.detail.add_new")}
-                </button>
+                </Button>
               )}
               {!isAdmin && (
                 <>
@@ -194,7 +195,7 @@ export default function CaseDetailPage({ caseId, role, onBack, onAddDetainee, on
                   {busy ? t("case.detail.deleting") : t("case.detail.delete")}
                 </button>
               )}
-              <button className="btn-primary" onClick={doDownload}>{t("case.detail.download_report")}</button>
+              <Button onClick={doDownload}>{t("case.detail.download_report")}</Button>
             </>
           )}
         </div>

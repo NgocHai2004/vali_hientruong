@@ -1,25 +1,26 @@
 
+import {
+  Bell, Brain,
+  ChevronRight, ClipboardList, Cpu, FileText, Folder, HardDrive,
+  History, LayoutDashboard, LogOut, MemoryStick, Moon, Plus, RefreshCw, Settings, ShieldCheck,
+  Sun, Users
+} from "lucide-react";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { api, fpApi, cccdApi, exportToUsb } from "./api";
-import { toast } from "./Toast";
-import { notify } from "./notifications";
-import SyncDiffModal, { buildSyncDiff } from "./SyncDiffModal";
-import DetaineeForm from "./DetaineeForm";
-import DataCapturePage from "./DataCapturePage";
+import { api, cccdApi, exportToUsb, fpApi } from "./api";
 import CaseDetailPage from "./CaseDetailPage";
 import CasesPage from "./CasesPage";
-import SceneMatchPage from "./SceneMatchPage";
-import "./sceneMatch.css";
-import "./theme.css";
-import UsbDrivePickerModal from "./UsbDrivePickerModal";
 import Button from "./components/Button";
-import { useI18n, LanguageSwitch } from "./i18n";
+import DataCapturePage from "./DataCapturePage";
+import DetaineeForm from "./DetaineeForm";
+import { LanguageSwitch, useI18n } from "./i18n";
 import { useFeatures } from "./lib/features";
-import {
-  BarChart3, Bell, Brain, ChevronLeft, ChevronRight, ClipboardList, Cpu, FileText, Folder, HardDrive,
-  LayoutDashboard, LogOut, MemoryStick, Moon, Plus, RefreshCw, Settings, ShieldCheck,
-  Sun, Users,
-} from "lucide-react";
+import { notify } from "./notifications";
+import "./sceneMatch.css";
+import SceneMatchPage from "./SceneMatchPage";
+import SyncDiffModal, { buildSyncDiff } from "./SyncDiffModal";
+import "./theme.css";
+import { toast } from "./Toast";
+import UsbDrivePickerModal from "./UsbDrivePickerModal";
 
 const Icon = {
   dashboard: (
@@ -97,9 +98,9 @@ const SIDEBAR_EXPANDED_KEY = "vali-sidebar-expanded";
 // va dashboard con nut dan sang; chi an khoi thanh dieu huong.
 const NAV_BASE = [
   { key: "dashboard", labelKey: "nav.dashboard", icon: <LayoutDashboard />, dashboardLabel: { vi: "Tổng quan", en: "Overview" } },
-  { key: "detainees", labelKey: "nav.detainees", icon: <FileText />, dashboardLabel: { vi: "Hồ sơ", en: "Profiles" } },
   { key: "scene_traces", labelKey: "nav.scene_traces", icon: <Folder />, dashboardLabel: { vi: "Vụ án", en: "Cases" } },
-  { key: "detainee_history", labelKey: "nav.detainee_history", icon: <BarChart3 />, dashboardLabel: { vi: "Lịch sử", en: "History" } },
+  { key: "detainees", labelKey: "nav.detainees", icon: <FileText />, dashboardLabel: { vi: "Hồ sơ", en: "Profiles" } },
+  { key: "detainee_history", labelKey: "nav.detainee_history", icon: <History />, dashboardLabel: { vi: "Lịch sử", en: "History" } },
   { key: "logs", labelKey: "nav.logs", icon: <ClipboardList />, dashboardLabel: { vi: "Báo cáo", en: "Reports" } },
   { key: "sync", labelKey: "nav.sync", icon: <RefreshCw />, dashboardSecondary: true },
 ];
@@ -3765,8 +3766,8 @@ const styles = `
     height: 100dvh;
     overflow: hidden;
     display: grid;
-    /* Sidebar 64px thu gon, 210px mo rong voi animation muot ma */
-    grid-template-columns: 64px minmax(0, 1fr);
+    /* Sidebar 68px thu gon, 210px mo rong voi animation muot ma */
+    grid-template-columns: 68px minmax(0, 1fr);
     grid-template-rows: 55px minmax(0, 1fr);
     transition: grid-template-columns 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: grid-template-columns;
@@ -8417,11 +8418,11 @@ const styles = `
   /* Modern High-Tech Enterprise UI — disable light trails when reduced motion */
   /* Sidebar sizing */
   .app {
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: 68px minmax(0, 1fr);
     transition: grid-template-columns 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .app.dashboard-active {
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: 68px minmax(0, 1fr);
     transition: grid-template-columns 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .app.sidebar-expanded,
@@ -8430,7 +8431,7 @@ const styles = `
   }
 
   @media (max-width: 1380px) {
-    .app.dashboard-active:not(.sidebar-expanded) { grid-template-columns: 64px minmax(0, 1fr); }
+    .app.dashboard-active:not(.sidebar-expanded) { grid-template-columns: 68px minmax(0, 1fr); }
   }
 
   .app .nav-item:not(.active) {
@@ -8461,6 +8462,62 @@ const styles = `
     color: #fff !important;
     background: linear-gradient(135deg, #168BFF 0%, #5145F5 100%) !important;
     box-shadow: 0 4px 12px rgba(46, 102, 235, .34) !important;
+  }
+
+  /* Segmented filters (Tất cả / Đang điều tra / Đã kết thúc) */
+  .app .scp-seg,
+  .app[data-dashboard-theme="light"] .scp-seg {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 10px;
+    border: 1px solid rgba(81, 69, 245, .22) !important;
+    background: rgba(22, 139, 255, .05) !important;
+    padding: 3px;
+    gap: 3px;
+  }
+  .app[data-dashboard-theme="light"] .scp-seg {
+    border-color: #dce8f5 !important;
+    background: #edf4fc !important;
+  }
+  .app .scp-seg button,
+  .app[data-dashboard-theme="light"] .scp-seg button {
+    height: 32px;
+    padding: 0 14px;
+    border: 0 !important;
+    border-radius: 7px;
+    background: transparent !important;
+    color: #7f95b5 !important;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.16s ease;
+  }
+  .app[data-dashboard-theme="light"] .scp-seg button {
+    color: #5e7294 !important;
+  }
+  .app .scp-seg button:hover:not(.on),
+  .app[data-dashboard-theme="light"] .scp-seg button:hover:not(.on) {
+    color: #168bff !important;
+    background: rgba(22, 139, 255, .08) !important;
+  }
+  .app .scp-seg button.on,
+  .app[data-dashboard-theme="light"] .scp-seg button.on {
+    color: #fff !important;
+    font-weight: 700 !important;
+    background: linear-gradient(135deg, #168BFF 0%, #5145F5 100%) !important;
+    box-shadow: 0 4px 12px rgba(46, 102, 235, .32) !important;
+  }
+
+  .app[data-dashboard-theme="light"] .scp-name {
+    color: #0a1930 !important;
+    font-weight: 700 !important;
+  }
+  .app[data-dashboard-theme="light"] .scp-sub2 {
+    color: #556c8d !important;
+  }
+  .app[data-dashboard-theme="light"] .scp-sk span {
+    background: linear-gradient(90deg, #e4edf8 25%, #f2f7fc 37%, #e4edf8 63%) !important;
+    background-size: 400% 100% !important;
   }
 
   .sidebar-account-area {
@@ -9170,7 +9227,7 @@ const styles = `
   }
 
   /* Keep one consistent application shell on every tab. */
-  .app.dashboard-active { grid-template-columns: 64px minmax(0, 1fr); }
+  .app.dashboard-active { grid-template-columns: 68px minmax(0, 1fr); }
   .app.dashboard-active.sidebar-expanded { grid-template-columns: 210px minmax(0, 1fr); }
   .app.non-dashboard .content {
     padding: 6px;
@@ -9178,7 +9235,7 @@ const styles = `
   }
 
   @media (max-width: 1380px) {
-    .app.dashboard-active:not(.sidebar-expanded) { grid-template-columns: 64px minmax(0, 1fr); }
+    .app.dashboard-active:not(.sidebar-expanded) { grid-template-columns: 68px minmax(0, 1fr); }
   }
 
   @media (prefers-reduced-motion: reduce) {

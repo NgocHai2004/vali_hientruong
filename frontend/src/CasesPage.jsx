@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import { useI18n } from "./i18n";
 import CaseFormModal from "./CaseFormModal";
+import Button from "./components/Button";
 import {
   IcChevRight, IcInfo, IcPencil, IcPlus,
   IcReanalyze, IcSearch, IcTrash,
@@ -147,9 +148,9 @@ export default function CasesPage({ role = "user", onPick, onOpenCase }) {
               <IcReanalyze />
             </button>
             {!isAdmin && (
-              <button type="button" className="btn-primary scp-new" onClick={() => setForm({})}>
-                <IcPlus /> {t("case.new")}
-              </button>
+              <Button className="scp-new" startIcon={<IcPlus />} onClick={() => setForm({})}>
+                {t("case.new")}
+              </Button>
             )}
           </div>
         </div>

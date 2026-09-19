@@ -50,7 +50,7 @@ Hệ thống phần mềm chuyên dụng phục vụ công tác thu thập, qu�
 - **Cách 2 — Chạy riêng lẻ để dev:**
   - Backend:
     ```powershell
-    .\.venv\Scripts\python.exe -m uvicorn --app-dir backend main:app --port 8000 --reload
+    .\.venv\Scripts\python.exe -m uvicorn --app-dir backend main:app --port 8001 --reload
     ```
   - Frontend:
     ```powershell

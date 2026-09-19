@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, auth } from "./api";
 import { useI18n } from "./i18n";
+import Button from "./components/Button";
 
 // Form tạo / sửa vụ án. Dùng chung 2 chế độ: có `initial` là sửa, không có là tạo.
 // Mã vụ án không cho sửa: sinh tự động qua counter, là khoá tra cứu trong _log
@@ -165,9 +166,9 @@ export default function CaseFormModal({ initial = null, onSaved, onCancel }) {
           <button type="button" className="btn-secondary" onClick={onCancel} disabled={busy}>
             {t("common.cancel")}
           </button>
-          <button type="submit" className="btn-primary" disabled={busy}>
+          <Button type="submit" disabled={busy}>
             {busy ? t("common.saving") : t(editing ? "common.save" : "case.form.submit_new")}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "./i18n";
 import { demoShots } from "./sceneDemo";
+import Button from "./components/Button";
 
 // Panel chi tiết dấu vết, cố định bên phải danh sách (không phải modal).
 // 4 khung ảnh xếp 2x2: 2 ảnh gốc cán bộ gửi + 2 ảnh đã chấm đặc trưng.
@@ -126,9 +127,9 @@ export default function SceneTraceDetail({ item, busy, onClose, onSaveNote, onOp
                 onChange={(e) => setNoteText(e.target.value)}
               />
               <div className="scene-note-act">
-                <button className="btn-primary" onClick={saveNote} disabled={busy}>
+                <Button onClick={saveNote} disabled={busy}>
                   {t("common.save")}
-                </button>
+                </Button>
                 <button
                   className="btn-ghost"
                   onClick={() => { setEditNote(false); setNoteText(item.note || ""); }}
@@ -142,9 +143,9 @@ export default function SceneTraceDetail({ item, busy, onClose, onSaveNote, onOp
           )}
         </section>
 
-        <button className="btn-primary scene-detail-more" onClick={() => onOpenFull?.(item)}>
+        <Button className="scene-detail-more" onClick={() => onOpenFull?.(item)}>
           {t("scene.detail.btn")} ›
-        </button>
+        </Button>
       </div>
 
       {zoomShot && (

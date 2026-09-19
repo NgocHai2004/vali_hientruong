@@ -377,3 +377,39 @@
 :root[data-app-theme="light"] .app ::-webkit-scrollbar-track {
   background: #edf4fb;
 }
+
+:root[data-app-theme="light"] .app .scp-seg {
+  border-color: #dce8f5 !important;
+  background: #edf4fc !important;
+}
+
+:root[data-app-theme="light"] .app .scp-seg button {
+  color: #5e7294 !important;
+}
+
+:root[data-app-theme="light"] .app .scp-seg button:hover:not(.on) {
+  color: #168bff !important;
+  background: rgba(22, 139, 255, 0.08) !important;
+}
+
+:root[data-app-theme="light"] .app .scp-seg button.on {
+  color: #fff !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #168bff 0%, #5145f5 100%) !important;
+  box-shadow: 0 4px 12px rgba(46, 102, 235, 0.32) !important;
+}
+
+:root[data-app-theme="light"] .app .scp-name {
+  color: #0a1930 !important;
+  font-weight: 700 !important;
+}
+
+:root[data-app-theme="light"] .app .scp-sub2 {
+  color: #556c8d !important;
+}
+
+:root[data-app-theme="light"] .app .scp-sk span {
+  background: linear-gradient(90deg, #e4edf8 25%, #f2f7fc 37%, #e4edf8 63%) !important;
+  background-size: 400% 100% !important;
+}
+

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import SceneTraceDetail from "./SceneTraceDetail";
 import SceneTraceFull from "./SceneTraceFull";
+import Button from "./components/Button";
 import { useI18n } from "./i18n";
 import { DEMO_ITEMS } from "./sceneDemo";
 
@@ -198,9 +199,9 @@ export default function SceneTracesPage({ go }) {
       <section className="panel scene-need-session">
         <h2>{t("scene.title")}</h2>
         <p>{t("scene.need_session")}</p>
-        <button className="btn-primary" onClick={() => go && go("scene_traces")}>
+        <Button onClick={() => go && go("scene_traces")}>
           {t("scene.go_cases")}
-        </button>
+        </Button>
       </section>
     );
   }
@@ -234,13 +235,12 @@ export default function SceneTracesPage({ go }) {
             </div>
           </div>
           <div className="scene-list-head-actions">
-            <button
-              className="btn-primary"
+            <Button
               onClick={() => !busy && fileRef.current?.click()}
               disabled={busy}
             >
               {busy ? t("scene.uploading") : t("scene.btn.add")}
-            </button>
+            </Button>
             <input
               ref={fileRef}
               type="file"
