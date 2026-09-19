@@ -489,9 +489,9 @@ label.smp-drop.on {
 }
 
 .smp-tr-row {
-  /* 6 cot: dau chon | thumb | ma+ten file | vi tri | thoi gian | nut. */
+  /* 5 cot: anh | ma+ten file | vi tri | thoi gian | nut. */
   display: grid;
-  grid-template-columns: 20px 48px minmax(0, 1.2fr) minmax(0, 1fr) 124px 90px;
+  grid-template-columns: 48px minmax(0, 1.2fr) minmax(0, 1fr) 124px 90px;
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
@@ -501,27 +501,10 @@ label.smp-drop.on {
   flex: 0 0 auto;
   border: 1.5px solid #1b3355;
   background: rgba(11, 24, 44, .7);
-  cursor: pointer;
 }
 
 .smp-tr-row:hover {
   border-color: #3a5f8c;
-}
-
-.smp-tr-selected-mark {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #32d583;
-  opacity: 0;
-  filter: drop-shadow(0 0 4px rgba(50, 213, 131, .4));
-  transition: opacity .15s ease;
-}
-
-.smp-tr-selected-mark.visible {
-  opacity: 1;
 }
 
 .smp-tr-meta {

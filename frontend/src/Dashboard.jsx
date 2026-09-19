@@ -1,5 +1,5 @@
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api, fpApi, cccdApi, exportToUsb } from "./api";
 import { toast } from "./Toast";
 import { notify } from "./notifications";
@@ -10,9 +10,16 @@ import CaseDetailPage from "./CaseDetailPage";
 import CasesPage from "./CasesPage";
 import SceneMatchPage from "./SceneMatchPage";
 import "./sceneMatch.css";
+import "./theme.css";
 import UsbDrivePickerModal from "./UsbDrivePickerModal";
+import Button from "./components/Button";
 import { useI18n, LanguageSwitch } from "./i18n";
 import { useFeatures } from "./lib/features";
+import {
+  BarChart3, Bell, Brain, ChevronLeft, ChevronRight, ClipboardList, Cpu, FileText, Folder, HardDrive,
+  LayoutDashboard, LogOut, MemoryStick, Moon, Plus, RefreshCw, Settings, ShieldCheck,
+  Sun, Users,
+} from "lucide-react";
 
 const Icon = {
   dashboard: (
@@ -72,29 +79,52 @@ const Icon = {
   gear: (
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
   ),
+  sun: (
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" /></svg>
+  ),
+  moon: (
+    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+  ),
 };
+
+const APP_THEME_KEY = "vali-app-theme";
+const LEGACY_DASHBOARD_THEME_KEY = "vali-dashboard-theme";
+const SIDEBAR_EXPANDED_KEY = "vali-sidebar-expanded";
 
 // Menu trai. "sessions" (Phien lam viec) va "cells" (Co so giam giu) DA BO khoi
 // menu theo yeu cau: nhanh nay khong dung 2 chuc nang do. Route + component van
 // giu (xem <main className="content">) vi luong thu nhan ho so con di qua phien,
 // va dashboard con nut dan sang; chi an khoi thanh dieu huong.
 const NAV_BASE = [
-  { key: "dashboard", labelKey: "nav.dashboard", icon: Icon.dashboard },
-  { key: "scene_traces", labelKey: "nav.scene_traces", icon: Icon.folder },
-  { key: "detainees", labelKey: "nav.detainees", icon: Icon.file },
-  { key: "detainee_history", labelKey: "nav.detainee_history", icon: Icon.log },
-  { key: "sync", labelKey: "nav.sync", icon: Icon.sync },
-  { key: "logs", labelKey: "nav.logs", icon: Icon.clipboard },
+  { key: "dashboard", labelKey: "nav.dashboard", icon: <LayoutDashboard />, dashboardLabel: { vi: "Tổng quan", en: "Overview" } },
+  { key: "detainees", labelKey: "nav.detainees", icon: <FileText />, dashboardLabel: { vi: "Hồ sơ", en: "Profiles" } },
+  { key: "scene_traces", labelKey: "nav.scene_traces", icon: <Folder />, dashboardLabel: { vi: "Vụ án", en: "Cases" } },
+  { key: "detainee_history", labelKey: "nav.detainee_history", icon: <BarChart3 />, dashboardLabel: { vi: "Lịch sử", en: "History" } },
+  { key: "logs", labelKey: "nav.logs", icon: <ClipboardList />, dashboardLabel: { vi: "Báo cáo", en: "Reports" } },
+  { key: "sync", labelKey: "nav.sync", icon: <RefreshCw />, dashboardSecondary: true },
 ];
 const NAV_ADMIN = [
-  { key: "users", labelKey: "nav.users", icon: Icon.users },
-  { key: "settings", labelKey: "nav.settings", icon: Icon.gear },
+  { key: "settings", labelKey: "nav.settings", icon: <Settings />, dashboardLabel: { vi: "Cài đặt", en: "Settings" } },
+  { key: "users", labelKey: "nav.users", icon: <Users />, dashboardSecondary: true },
 ];
 
 export default function Dashboard({ username = "admin", role = "user", fullName = "", onFullNameChange, onLogout }) {
   const { t, locale } = useI18n();
   useEffect(() => { setLastLocale(locale); }, [locale]);
   const [page, setPage] = useState("dashboard");
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    try { return window.localStorage.getItem(SIDEBAR_EXPANDED_KEY) === "true"; }
+    catch { return false; }
+  });
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem(APP_THEME_KEY)
+        || window.localStorage.getItem(LEGACY_DASHBOARD_THEME_KEY);
+      return saved === "light" || saved === "dark" ? saved : "dark";
+    } catch {
+      return "dark";
+    }
+  });
   // Vu an dang xem trong tab Dau vet hien truong ("" = dang o bang chon).
   const [sceneCaseId, setSceneCaseId] = useState("");
   const [editingDetainee, setEditingDetainee] = useState(null);
@@ -105,6 +135,24 @@ export default function Dashboard({ username = "admin", role = "user", fullName 
   const NAV = isAdmin ? [...NAV_BASE, ...NAV_ADMIN] : NAV_BASE;
   const deviceStatus = useDeviceConnections();
   const notifState = useNotifState();
+
+  useLayoutEffect(() => {
+    document.documentElement.dataset.appTheme = theme;
+    document.documentElement.style.colorScheme = theme;
+    try {
+      window.localStorage.setItem(APP_THEME_KEY, theme);
+      window.localStorage.setItem(LEGACY_DASHBOARD_THEME_KEY, theme);
+    } catch { /* storage may be disabled */ }
+
+    return () => {
+      delete document.documentElement.dataset.appTheme;
+      document.documentElement.style.colorScheme = "";
+    };
+  }, [theme]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem(SIDEBAR_EXPANDED_KEY, String(sidebarExpanded)); } catch { /* storage may be disabled */ }
+  }, [sidebarExpanded]);
 
   const goPage = async (key, opts = {}) => {
     if (key !== "session_capture") {
@@ -204,16 +252,14 @@ export default function Dashboard({ username = "admin", role = "user", fullName 
   return (
     <>
       <style>{styles}</style>
-      <div className="app">
+      <div className={`app dashboard-active ${page !== "dashboard" ? "non-dashboard" : ""} ${sidebarExpanded ? "sidebar-expanded" : ""}`} data-dashboard-theme={theme}>
         <Header
-          username={username}
-          fullName={fullName}
           devices={deviceStatus}
           notif={notifState}
-          onLogout={onLogout}
-          isAdmin={isAdmin}
-          onEditProfile={() => setShowProfileModal(true)}
           onEditDetainee={editDetainee}
+          theme={theme}
+          showThemeToggle
+          onThemeToggle={() => setTheme((current) => current === "dark" ? "light" : "dark")}
         />
         {showProfileModal && (
           <ProfileEditModal
@@ -231,27 +277,55 @@ export default function Dashboard({ username = "admin", role = "user", fullName 
             (data-tip + CSS ::after) — khong dung title= de tranh tooltip he thong
             cham va lech tong mau. aria-label giu cho trinh doc man hinh. */}
         <aside className="sidebar">
+          <button
+            type="button"
+            className="sidebar-toggle"
+            onClick={() => setSidebarExpanded((expanded) => !expanded)}
+            aria-label={sidebarExpanded ? "Thu gọn thanh điều hướng" : "Mở rộng thanh điều hướng"}
+            aria-expanded={sidebarExpanded}
+          >
+            <ChevronRight className="sidebar-toggle-chevron" />
+          </button>
           <nav className="nav">
             {NAV.map((item) => (
               <button
                 key={item.key}
-                className={`nav-item ${page === item.key ? "active" : ""}`}
+                className={`nav-item ${page === item.key ? "active" : ""} ${item.dashboardSecondary ? "dashboard-secondary" : ""}`}
                 onClick={() => goPage(item.key)}
                 data-tip={t(item.labelKey)}
                 aria-label={t(item.labelKey)}
                 aria-current={page === item.key ? "page" : undefined}
               >
                 <span className="nav-icon">{item.icon}</span>
+                <span className="nav-label">{item.dashboardLabel ? item.dashboardLabel[locale] : t(item.labelKey)}</span>
               </button>
             ))}
           </nav>
 
-          <div
-            className="security-card"
-            data-tip={`${t("nav.security_title")} — ${t("nav.security_desc")}`}
-            aria-label={t("nav.security_title")}
-          >
-            <div className="security-icon">{Icon.shield}</div>
+          <div className="sidebar-account-area">
+            <button
+              type="button"
+              className="sidebar-account"
+              onClick={() => setShowProfileModal(true)}
+              aria-label={t("profile.edit_menu")}
+              data-tip={t("profile.edit_menu")}
+            >
+              <span className="sidebar-account-avatar">{(fullName || username).slice(0, 1).toUpperCase()}</span>
+              <span className="sidebar-account-copy">
+                <strong>{fullName || username}</strong>
+                <small>{isAdmin ? t("common.role.admin") : t("common.role.officer")}</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="sidebar-logout"
+              onClick={onLogout}
+              aria-label={t("header.logout")}
+              data-tip={t("header.logout")}
+            >
+              <span className="sidebar-logout-icon"><LogOut /></span>
+              <span className="sidebar-logout-label">{t("header.logout")}</span>
+            </button>
           </div>
         </aside>
 
@@ -313,14 +387,12 @@ const DEVICE_CHIPS = [
   { key: "fp", labelKey: "header.device.fp" },
 ];
 
-function Header({ username, fullName, devices, notif, onLogout, isAdmin, onEditProfile, onEditDetainee }) {
-  const { t } = useI18n();
+function Header({ devices, notif, onEditDetainee, theme, showThemeToggle, onThemeToggle }) {
+  const { t, locale } = useI18n();
   const chips = DEVICE_CHIPS;
   const [notifOpen, setNotifOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [viewingMatch, setViewingMatch] = useState(null);
   const notifRef = useRef(null);
-  const userMenuRef = useRef(null);
 
   useEffect(() => {
     if (!notifOpen) return;
@@ -333,17 +405,6 @@ function Header({ username, fullName, devices, notif, onLogout, isAdmin, onEditP
     return () => document.removeEventListener("mousedown", onClick);
   }, [notifOpen]);
 
-  useEffect(() => {
-    if (!userMenuOpen) return;
-    const onClick = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
-        setUserMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [userMenuOpen]);
-
   const toggleNotif = () => {
     const nextOpen = !notifOpen;
     setNotifOpen(nextOpen);
@@ -353,7 +414,7 @@ function Header({ username, fullName, devices, notif, onLogout, isAdmin, onEditP
     <header className="header">
       <div className="brand">
         <div className="brand-logo">
-          <img src="/pyxis-logo.png" alt={t("header.brand_logo_alt")} />
+          <img src={showThemeToggle ? "/pyxis-favicon.png" : "/pyxis-logo.png"} alt={t("header.brand_logo_alt")} />
         </div>
         <div>
           <div className="brand-title">{t("header.brand_title")}</div>
@@ -361,7 +422,7 @@ function Header({ username, fullName, devices, notif, onLogout, isAdmin, onEditP
         </div>
       </div>
 
-      <div className="header-actions">
+      <div className="header-device-center">
         <div className="device-chips" role="group" aria-label={t("header.device_group")}>
           {chips.map((d) => {
             const ok = Boolean(devices?.[d.key]);
@@ -378,8 +439,25 @@ function Header({ username, fullName, devices, notif, onLogout, isAdmin, onEditP
             );
           })}
         </div>
+      </div>
 
-        <LanguageSwitch />
+      <div className="header-actions">
+        {showThemeToggle && (
+          <button
+            type="button"
+            className="icon-button theme-toggle"
+            onClick={onThemeToggle}
+            aria-pressed={theme === "light"}
+            aria-label={theme === "dark"
+              ? (locale === "en" ? "Switch to light mode" : "Chuyển sang giao diện sáng")
+              : (locale === "en" ? "Switch to dark mode" : "Chuyển sang giao diện tối")}
+            title={theme === "dark"
+              ? (locale === "en" ? "Light mode" : "Giao diện sáng")
+              : (locale === "en" ? "Dark mode" : "Giao diện tối")}
+          >
+            {theme === "dark" ? <Sun /> : <Moon />}
+          </button>
+        )}
 
         <div className="notif-wrap" ref={notifRef}>
           <button
@@ -388,7 +466,7 @@ function Header({ username, fullName, devices, notif, onLogout, isAdmin, onEditP
             onClick={toggleNotif}
             title={notif.unread > 0 ? t("header.notif.new", { n: notif.unread }) : t("header.notif.none")}
           >
-            {Icon.bell}
+            <Bell />
             {notif.unread > 0 && <b>{notif.unread > 99 ? "99+" : notif.unread}</b>}
           </button>
           {notifOpen && (
@@ -452,54 +530,7 @@ function Header({ username, fullName, devices, notif, onLogout, isAdmin, onEditP
           )}
         </div>
 
-        <div className="user-box-wrap" ref={userMenuRef} style={{ position: "relative" }}>
-          <button
-            type="button"
-            className="user-box"
-            onClick={() => setUserMenuOpen((v) => !v)}
-            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}
-            aria-haspopup="menu"
-            aria-expanded={userMenuOpen}
-          >
-            <div className="avatar">{(fullName || username).slice(0, 1).toUpperCase()}</div>
-            <div className="user-info">
-              <strong>{fullName || username}</strong>
-              <span>{isAdmin ? t("common.role.admin") : t("common.role.officer")}</span>
-            </div>
-          </button>
-          {userMenuOpen && (
-            <div
-              role="menu"
-              style={{
-                position: "absolute", top: "calc(100% + 8px)", right: 0, minWidth: 200,
-                background: "linear-gradient(180deg, rgba(10,26,54,.95) 0%, rgba(6,20,42,.95) 100%)",
-                border: "1px solid var(--border)", borderRadius: 8,
-                boxShadow: "0 8px 24px rgba(2,8,23,.6)", zIndex: 100, padding: 6,
-                backdropFilter: "blur(18px) saturate(140%)",
-              }}
-            >
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => { setUserMenuOpen(false); onEditProfile && onEditProfile(); }}
-                style={{
-                  display: "block", width: "100%", textAlign: "left",
-                  padding: "8px 12px", border: "none", background: "none",
-                  borderRadius: 6, cursor: "pointer", fontSize: 14, color: "var(--text)",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(53,216,255,.1)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-              >
-                {t("profile.edit_menu")}
-              </button>
-            </div>
-          )}
-        </div>
-
-        <button className="logout-button" onClick={onLogout}>
-          {Icon.logout}
-          {t("header.logout")}
-        </button>
+        <LanguageSwitch />
       </div>
       {viewingMatch && (
         <DetailModal detainee={viewingMatch} onClose={() => setViewingMatch(null)} />
@@ -650,7 +681,7 @@ function makeHwSample() {
 }
 
 function DashboardHome({ go, isAdmin = false, fullName = "" }) {
-  const { t, greeting, dayNames, formatNumber, formatDateTime, formatDate } = useI18n();
+  const { t, locale, greeting, dayNames, formatNumber, formatDateTime, formatDate } = useI18n();
   const [stats, setStats] = useState(null);
   const [error, setError] = useState("");
   const [now, setNow] = useState(new Date());
@@ -691,8 +722,9 @@ function DashboardHome({ go, isAdmin = false, fullName = "" }) {
     <div className="page dashboard-page">
       <div className="dash-hero">
         <div>
-          <h1>{greet}, {fullName || t("dashboard.greet_officer_default")}</h1>
+          <h1>{greet}, {fullName || t("dashboard.greet_officer_default")} <span className="dash-hero-wave" aria-hidden="true">👋</span></h1>
           <p>{timeStr} • {dateStr}</p>
+          <span className="dash-hero-motto">{locale === "en" ? "Have a productive day!" : "Hôm nay là một ngày làm việc hiệu quả!"}</span>
         </div>
         {/* Vụ án không thuộc riêng cán bộ nào nên hero chỉ dẫn sang tab Dấu vết
             hiện trường, không còn "phiên đang mở của tôi". Admin chỉ xem nên
@@ -705,26 +737,32 @@ function DashboardHome({ go, isAdmin = false, fullName = "" }) {
             </div>
             <small>{t("dashboard.case.investigating_hint")}</small>
           </div>
-          <button className="button primary" onClick={() => go("scene_traces")}>
-            {isAdmin ? null : Icon.plus} {t(isAdmin ? "dashboard.case.view_all" : "dashboard.case.manage")}
-          </button>
+          <Button
+            className="dashboard-primary-action"
+            variant="primary"
+            size="large"
+            startIcon={isAdmin ? null : <Plus />}
+            onClick={() => go("scene_traces")}
+          >
+            {t(isAdmin ? "dashboard.case.view_all" : "dashboard.case.manage")}
+          </Button>
         </div>
       </div>
 
       {/* Vụ án ai cũng xem được nên admin thấy đủ 4 card như cán bộ. */}
       <div className="stat-grid">
         <StatCard
-          tone="green"
-          icon={Icon.file}
+          tone="blue"
+          icon={<FileText />}
           label={t("dashboard.stat.today")}
           value={stats.today}
           note={todayDelta === 0 ? t("dashboard.stat.today.same") : todayDelta > 0 ? t("dashboard.stat.today.up", { n: todayDelta }) : t("dashboard.stat.today.down", { n: Math.abs(todayDelta) })}
           delta={todayDelta}
-          extra={<Sparkline data={activity.map((a) => a.count)} color="#12af64" />}
+          extra={<Sparkline data={activity.map((a) => a.count)} color="#21d4fd" />}
         />
         <StatCard
-          tone="blue"
-          icon={Icon.folder}
+          tone="purple"
+          icon={<Folder />}
           label={t("dashboard.stat.total")}
           value={formatNumber(total)}
           note={t("dashboard.stat.total.note")}
@@ -732,8 +770,8 @@ function DashboardHome({ go, isAdmin = false, fullName = "" }) {
         />
         {/* Vụ án ai cũng xem được nên card này hiện cho cả admin — grid đủ 4 cột. */}
         <StatCard
-          tone="purple"
-          icon={Icon.clipboard}
+          tone="orange"
+          icon={<ClipboardList />}
           label={t("dashboard.stat.investigating_cases")}
           value={investigatingCases}
           note={investigatingCases ? t("dashboard.stat.investigating_cases.note") : t("dashboard.stat.investigating_cases.none")}
@@ -741,7 +779,7 @@ function DashboardHome({ go, isAdmin = false, fullName = "" }) {
         />
         <StatCard
           tone={missing > 0 ? "orange" : "green"}
-          icon={Icon.shield}
+          icon={<ShieldCheck />}
           label={t("dashboard.stat.missing")}
           value={missing}
           note={missing > 0 ? t("dashboard.stat.missing.need") : t("dashboard.stat.missing.ok")}
@@ -877,7 +915,7 @@ function DashboardHome({ go, isAdmin = false, fullName = "" }) {
         </section>
 
         <section className="panel">
-          <PanelHeader title={t("dashboard.panel.hardware")} />
+          <PanelHeader title={t("dashboard.panel.hardware")} showChevron={false} />
           <HardwareStatus hw={hw} />
         </section>
       </div>
@@ -932,17 +970,28 @@ function DonutGender({ male, female, malePct, femalePct }) {
   const c = 2 * Math.PI * r;
   const maleLen = total ? (malePct / 100) * c : 0;
   const femaleLen = total ? (femalePct / 100) * c : 0;
-  const MALE_COLOR = "#168BFF";
-  const FEMALE_COLOR = "#7E93B8";
+  const MALE_GRADIENT = "linear-gradient(135deg, #168BFF, #5145F5)";
+  const FEMALE_COLOR = "#8FA3C5";
   return (
     <div className="donut-wrap">
       <svg viewBox="0 0 140 140" className="donut">
+        <defs>
+          <linearGradient id="genderMaleGradient" x1="18" y1="18" x2="122" y2="122" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#168BFF" />
+            <stop offset="100%" stopColor="#5145F5" />
+          </linearGradient>
+          <filter id="genderRingGlow" x="-35%" y="-35%" width="170%" height="170%">
+            <feGaussianBlur stdDeviation="3.2" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
         <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(53, 216, 255, 0.10)" strokeWidth="18" />
         <circle
           cx="70" cy="70" r={r} fill="none"
-          stroke={MALE_COLOR} strokeWidth="18" strokeLinecap="butt"
+          stroke="url(#genderMaleGradient)" strokeWidth="18" strokeLinecap="round"
           strokeDasharray={`${maleLen} ${c}`}
           transform="rotate(-90 70 70)"
+          filter="url(#genderRingGlow)"
         />
         <circle
           cx="70" cy="70" r={r} fill="none"
@@ -956,7 +1005,7 @@ function DonutGender({ male, female, malePct, femalePct }) {
       </svg>
       <div className="donut-legend">
         <div className="donut-legend-row">
-          <span className="donut-dot" style={{ background: MALE_COLOR }} />
+          <span className="donut-dot donut-dot-male" style={{ background: MALE_GRADIENT }} />
           <span>{t("dashboard.donut.male")}</span>
           <strong>{formatNumber(male)}</strong>
           <small>{malePct}%</small>
@@ -972,34 +1021,11 @@ function DonutGender({ male, female, malePct, femalePct }) {
   );
 }
 
-function RingGauge({ value, label, unit = "%", tone = "red", size = 76 }) {
-  const r = size / 2 - 6;
-  const c = 2 * Math.PI * r;
-  const pct = Math.max(0, Math.min(100, Number(value) || 0));
-  const dash = (pct / 100) * c;
-  const palette = {
-    red: "#b91c26",
-    orange: "#e07a1f",
-    green: "#12af64",
-    blue: "#2371f4",
-    purple: "#7745db",
-  };
-  const color = palette[tone] || palette.red;
+function HardwareTile({ value, label, tone, icon }) {
   return (
-    <div className="ring-gauge">
-      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(53, 216, 255, 0.10)" strokeWidth="6" />
-        <circle
-          cx={size / 2} cy={size / 2} r={r} fill="none"
-          stroke={color} strokeWidth="6" strokeLinecap="round"
-          strokeDasharray={`${dash} ${c}`}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-        <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central" className="ring-gauge-value" fill={color}>
-          {value}{unit}
-        </text>
-      </svg>
-      <span className="ring-gauge-label">{label}</span>
+    <div className={`hardware-tile hardware-tile-${tone}`} aria-label={`${label}: ${value}%`} title={`${label}: ${value}%`}>
+      <span className="hardware-tile-icon" aria-hidden="true">{icon}</span>
+      <strong>{label}</strong>
     </div>
   );
 }
@@ -1033,14 +1059,14 @@ function HardwareStatus({ hw }) {
   return (
     <div className="hw-status">
       <div className="hw-rings">
-        <RingGauge value={hw.cpu} label={t("hw.cpu")} tone={hw.cpu > 80 ? "red" : hw.cpu > 60 ? "orange" : "green"} />
-        <RingGauge value={hw.ram} label={t("hw.ram")} tone={hw.ram > 80 ? "red" : hw.ram > 60 ? "orange" : "green"} />
-        <RingGauge value={hw.disk} label={t("hw.disk")} tone={hw.disk > 85 ? "red" : "blue"} />
-        <RingGauge value={hw.gpu} label={t("hw.chip")} tone="purple" />
+        <HardwareTile value={hw.cpu} label={t("hw.cpu")} tone="green" icon={<Cpu />} />
+        <HardwareTile value={hw.ram} label={t("hw.ram")} tone="purple" icon={<MemoryStick />} />
+        <HardwareTile value={hw.disk} label={t("hw.disk")} tone="blue" icon={<HardDrive />} />
+        <HardwareTile value={hw.gpu} label={t("hw.chip")} tone="pink" icon={<Brain />} />
       </div>
       <div className="hw-bars">
         <HardwareBar label={t("hw.temp")} value={hw.temp} unit="°C" tone={hw.temp > 70 ? "red" : hw.temp > 55 ? "orange" : "green"} />
-        <HardwareBar label={t("hw.battery")} value={hw.battery} tone={hw.battery < 20 ? "red" : "green"} />
+        <HardwareBar label={t("hw.battery")} value={hw.battery} tone={hw.battery < 20 ? "red" : "blue"} />
       </div>
       <div className="hw-meta">
         <div className="hw-meta-item">
@@ -1210,14 +1236,18 @@ function SystemItem({ icon, label, value, note }) {
   );
 }
 
-function PanelHeader({ title, action, onAction }) {
+function PanelHeader({ title, action, onAction, showChevron = true }) {
   return (
     <div className="panel-header">
       <h3>{title}</h3>
-      <button onClick={onAction}>
-        {action}
-        {Icon.arrow}
-      </button>
+      {(action || onAction) ? (
+        <button onClick={onAction}>
+          {action}
+          {Icon.arrow}
+        </button>
+      ) : showChevron ? (
+        <span className="panel-chevron" aria-hidden="true">{Icon.arrow}</span>
+      ) : null}
     </div>
   );
 }
@@ -3735,10 +3765,11 @@ const styles = `
     height: 100dvh;
     overflow: hidden;
     display: grid;
-    /* Sidebar chi con cot icon (56px) — nhan chu qua tooltip khi hover.
-       Truoc day 200px; thu lai tra ~145px chieu rong cho vung noi dung. */
-    grid-template-columns: 56px minmax(0, 1fr);
+    /* Sidebar 64px thu gon, 210px mo rong voi animation muot ma */
+    grid-template-columns: 64px minmax(0, 1fr);
     grid-template-rows: 55px minmax(0, 1fr);
+    transition: grid-template-columns 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: grid-template-columns;
     background:
       radial-gradient(circle at 75% 10%, rgba(22, 139, 255, .10), transparent 28%),
       radial-gradient(circle at 15% 90%, rgba(53, 216, 255, .06), transparent 30%),
@@ -4102,9 +4133,10 @@ const styles = `
     z-index: 999;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 5px 4px;
-    /* KHONG dat overflow:hidden — tooltip phai tran ra ngoai cot 56px. */
+    align-items: stretch;
+    padding: 14px 10px 12px 10px;
+    width: 100%;
+    box-sizing: border-box;
     overflow: visible;
     background:
       radial-gradient(circle at 50% -30%, rgba(22, 139, 255, .14), transparent 55%),
@@ -4115,22 +4147,53 @@ const styles = `
     color: var(--text);
   }
 
-  /* .sidebar-title da bo khoi markup: cot 56px khong du cho chu
-     "NHOM CHUC NANG". Nhan tung muc hien qua tooltip khi hover. */
+  .sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    right: -13px;
+    z-index: 100001;
+    width: 26px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    transform: translateY(-50%);
+    border: 1px solid rgba(53, 216, 255, .32);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(13, 43, 82, .98), rgba(7, 28, 57, .98));
+    box-shadow: 7px 0 18px rgba(2, 8, 23, .32);
+    color: var(--primary-2);
+    cursor: pointer;
+    transition: color .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+  .sidebar-toggle:hover,
+  .sidebar-toggle:focus-visible {
+    color: #fff;
+    border-color: rgba(53, 216, 255, .65);
+    background: linear-gradient(180deg, rgba(22, 139, 255, .95), rgba(34, 91, 218, .95));
+    outline: none;
+  }
+  .sidebar-toggle-chevron {
+    width: 17px;
+    height: 17px;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .app.sidebar-expanded .sidebar-toggle-chevron {
+    transform: rotate(180deg);
+  }
 
   .nav {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 6px;
+    align-items: stretch;
+    gap: 7px;
     width: 100%;
   }
 
-  /* ===== Tooltip cho sidebar icon =====
-     Hien ben phai icon khi hover/focus. Dung data-tip (khong dung title= de
-     tranh tooltip he thong cham + lech tong mau). */
+  /* Tooltip cho sidebar icon khi thu gon */
   .nav-item[data-tip]::before,
-  .security-card[data-tip]::before {
+  .sidebar-account[data-tip]::before,
+  .sidebar-logout[data-tip]::before {
     content: attr(data-tip);
     position: absolute;
     left: calc(100% + 10px);
@@ -4156,9 +4219,9 @@ const styles = `
     pointer-events: none;
     transition: opacity .16s ease, transform .16s ease, visibility .16s;
   }
-  /* Mui nhon tro vao icon */
   .nav-item[data-tip]::after,
-  .security-card[data-tip]::after {
+  .sidebar-account[data-tip]::after,
+  .sidebar-logout[data-tip]::after {
     content: "";
     position: absolute;
     left: calc(100% + 4px);
@@ -4180,26 +4243,31 @@ const styles = `
   .nav-item[data-tip]:focus-visible::before,
   .nav-item[data-tip]:hover::after,
   .nav-item[data-tip]:focus-visible::after,
-  .security-card[data-tip]:hover::before,
-  .security-card[data-tip]:hover::after {
+  .sidebar-account[data-tip]:hover::before,
+  .sidebar-account[data-tip]:hover::after,
+  .sidebar-logout[data-tip]:hover::before,
+  .sidebar-logout[data-tip]:hover::after {
     opacity: 1;
     visibility: visible;
     transform: translateY(-50%) translateX(0);
   }
-  /* O vuong 44x44 chua icon. KHONG dat overflow:hidden — tooltip phai tran ra
-     ngoai; phan cat vach sang da chuyen vao .nav-icon. */
+
   .nav-item {
     position: relative;
-    width: 44px;
-    height: 44px;
-    display: grid;
-    place-items: center;
-    padding: 0;
+    width: 100%;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 5px;
     border: 1px solid rgba(53, 216, 255, .08);
     border-radius: 12px;
     background: rgba(53, 216, 255, .03);
     color: var(--muted);
-    transition: .2s cubic-bezier(.4, 0, .2, 1);
+    cursor: pointer;
+    box-sizing: border-box;
+    overflow: visible;
+    transition: background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease;
   }
   .nav-item:hover {
     color: var(--text);
@@ -4215,9 +4283,7 @@ const styles = `
       0 8px 18px rgba(6, 55, 158, .45),
       inset 0 1px 0 rgba(255, 255, 255, .18);
   }
-  /* Vach sang chay tren dinh muc dang chon.
-     DAT TRONG .nav-icon (khong phai .nav-item::after) vi ::after cua .nav-item
-     da dung cho mui nhon tooltip — de chung o cung selector se de nhau. */
+
   .nav-item.active .nav-icon::after {
     content: "";
     position: absolute;
@@ -4237,14 +4303,12 @@ const styles = `
     100% { transform: translateX(320%); opacity: 0; }
   }
 
-  /* position:relative + overflow:hidden de vach sang (::after) chay trong o icon
-     va bi cat gon theo bo goc. */
   .nav-icon {
     position: relative;
     overflow: hidden;
     width: 34px;
     height: 34px;
-    flex: 0 0 auto;
+    flex: 0 0 34px;
     display: grid;
     place-items: center;
     border-radius: 9px;
@@ -4260,32 +4324,31 @@ const styles = `
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
   }
 
-  /* Cum an ninh bao mat: thu thanh o icon khien 44x44, chu di vao tooltip
-     (2 dong chu cu khong con cho trong cot 56px). */
-  .security-card {
-    position: relative;
-    margin-top: auto;
-    width: 44px;
-    height: 44px;
-    display: grid;
-    place-items: center;
-    padding: 0;
-    border: 1px solid rgba(53, 216, 255, .18);
-    border-radius: 12px;
-    background: linear-gradient(145deg, rgba(22, 139, 255, .16), rgba(40, 93, 222, .08));
-    color: var(--text);
+  .nav-label {
+    min-width: 0;
+    max-width: 0;
+    opacity: 0;
+    margin-left: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateX(-8px);
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: .15px;
+    transition: opacity 0.16s ease, transform 0.16s ease, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .security-icon {
-    flex: 0 0 auto;
-    width: 34px;
-    height: 34px;
-    display: grid;
-    place-items: center;
-    border-radius: 9px;
-    color: var(--primary-2);
-    background: rgba(53, 216, 255, .14);
+  .app.sidebar-expanded .nav-label {
+    opacity: 1;
+    max-width: 140px;
+    margin-left: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: auto;
+    transform: translateX(0);
+    transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1) 0.06s, transform 0.22s cubic-bezier(0.2, 0, 0, 1) 0.06s, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .security-icon svg { width: 18px; height: 18px; }
 
   .content {
     min-width: 0;
@@ -4741,9 +4804,13 @@ const styles = `
   }
   .donut-value {
     font-size: 24px;
-    font-weight: 800;
+    font-family: inherit;
+    font-weight: 700;
+    letter-spacing: -.5px;
     fill: var(--text);
   }
+  .app[data-dashboard-theme="dark"] .donut-value { fill: #F7FAFF; }
+  .app[data-dashboard-theme="light"] .donut-value { fill: #0A1833; }
   .donut-label {
     font-size: 11px;
     fill: var(--muted);
@@ -4770,6 +4837,7 @@ const styles = `
   .donut-legend-row strong { color: var(--text); font-size: 15px; font-weight: 800; }
   .donut-legend-row small { color: var(--muted); font-size: 12px; font-weight: 700; }
   .donut-dot { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .donut-dot-male { box-shadow: 0 0 10px rgba(81, 69, 245, .28); }
 
   /* Horizontal bar list */
   .hbar-list {
@@ -5008,17 +5076,30 @@ const styles = `
   }
   .activity-row:last-child { border-bottom: 0; }
   .activity-dot {
-    width: 8px;
-    height: 8px;
-    margin-top: 6px;
+    width: 10px;
+    height: 10px;
+    margin-top: 5px;
     border-radius: 50%;
     background: var(--primary);
+    box-shadow: 0 0 0 4px rgba(18, 175, 100, .18);
   }
-  .activity-dot.create { background: var(--success); }
-  .activity-dot.update { background: var(--warn); }
-  .activity-dot.delete { background: #ef4444; }
-  .activity-dot.import { background: var(--primary-hi); }
-  .activity-dot.login  { background: var(--primary); }
+  .activity-dot.create {
+    background: var(--success);
+    box-shadow: 0 0 0 4px rgba(18, 175, 100, .18);
+  }
+  .activity-dot.update {
+    background: var(--warn);
+    box-shadow: 0 0 0 4px rgba(224, 122, 31, .2);
+  }
+  .activity-dot.delete {
+    background: #ef4444;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, .18);
+  }
+  .activity-dot.import,
+  .activity-dot.login {
+    background: var(--primary);
+    box-shadow: 0 0 0 4px rgba(22, 139, 255, .18);
+  }
   .activity-line {
     color: var(--muted);
     font-size: 13px;
@@ -8334,6 +8415,237 @@ const styles = `
   }
 
   /* Modern High-Tech Enterprise UI — disable light trails when reduced motion */
+  /* Sidebar sizing */
+  .app {
+    grid-template-columns: 64px minmax(0, 1fr);
+    transition: grid-template-columns 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .app.dashboard-active {
+    grid-template-columns: 64px minmax(0, 1fr);
+    transition: grid-template-columns 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .app.sidebar-expanded,
+  .app.dashboard-active.sidebar-expanded {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+
+  @media (max-width: 1380px) {
+    .app.dashboard-active:not(.sidebar-expanded) { grid-template-columns: 64px minmax(0, 1fr); }
+  }
+
+  .app .nav-item:not(.active) {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+  .app .nav-item:not(.active):hover,
+  .app .nav-item:not(.active):focus-visible {
+    background: rgba(22, 139, 255, .10) !important;
+    border-color: transparent !important;
+  }
+  .app[data-dashboard-theme="light"] .nav-item:not(.active):hover,
+  .app[data-dashboard-theme="light"] .nav-item:not(.active):focus-visible {
+    background: rgba(8, 125, 242, .08) !important;
+  }
+
+  /* Shared active-action palette: blue to violet in every color mode. */
+  .app .nav-item.active,
+  .app[data-dashboard-theme="light"] .nav-item.active {
+    color: #fff !important;
+    border-color: rgba(81, 69, 245, .28) !important;
+    background: linear-gradient(135deg, #168BFF 0%, #5145F5 100%) !important;
+    box-shadow: 0 8px 18px rgba(46, 102, 235, .34) !important;
+  }
+  .app .header-actions .lang-switch button.active,
+  .app[data-dashboard-theme="light"] .header-actions .lang-switch button.active {
+    color: #fff !important;
+    background: linear-gradient(135deg, #168BFF 0%, #5145F5 100%) !important;
+    box-shadow: 0 4px 12px rgba(46, 102, 235, .34) !important;
+  }
+
+  .sidebar-account-area {
+    width: 100%;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .sidebar-account,
+  .sidebar-logout {
+    position: relative;
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 5px;
+    border: 1px solid rgba(53, 216, 255, .16);
+    border-radius: 12px;
+    color: var(--text);
+    background: rgba(22, 139, 255, .07);
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background .18s ease, border-color .18s ease, color .18s ease;
+  }
+  .sidebar-account:hover,
+  .sidebar-account:focus-visible,
+  .sidebar-logout:hover,
+  .sidebar-logout:focus-visible {
+    border-color: rgba(53, 216, 255, .38);
+    background: rgba(22, 139, 255, .14);
+    outline: none;
+  }
+  .sidebar-account-avatar {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    color: #fff;
+    background: linear-gradient(135deg, #168BFF, #5145F5);
+    box-shadow: 0 5px 13px rgba(46, 102, 235, .28);
+    font-size: 14px;
+    font-weight: 800;
+  }
+  .sidebar-account-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    max-width: 0;
+    opacity: 0;
+    margin-left: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateX(-8px);
+    transition: opacity 0.16s ease, transform 0.16s ease, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar-account-copy strong,
+  .sidebar-account-copy small {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sidebar-account-copy strong { font-size: 13px; }
+  .sidebar-account-copy small { color: var(--muted); font-size: 11px; }
+
+  .app.sidebar-expanded .sidebar-account {
+    padding-right: 8px;
+  }
+  .app.sidebar-expanded .sidebar-account-copy {
+    opacity: 1;
+    max-width: 130px;
+    margin-left: 10px;
+    pointer-events: auto;
+    transform: translateX(0);
+    transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1) 0.06s, transform 0.22s cubic-bezier(0.2, 0, 0, 1) 0.06s, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar-logout-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: grid;
+    place-items: center;
+  }
+  .sidebar-logout-icon svg { width: 19px; height: 19px; }
+  .sidebar-logout-label {
+    min-width: 0;
+    max-width: 0;
+    opacity: 0;
+    margin-left: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateX(-8px);
+    font-size: 13px;
+    font-weight: 700;
+    transition: opacity 0.16s ease, transform 0.16s ease, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .app.sidebar-expanded .sidebar-logout {
+    padding-right: 8px;
+  }
+  .app.sidebar-expanded .sidebar-logout-label {
+    opacity: 1;
+    max-width: 130px;
+    margin-left: 10px;
+    pointer-events: auto;
+    transform: translateX(0);
+    transition: opacity 0.22s cubic-bezier(0.2, 0, 0, 1) 0.06s, transform 0.22s cubic-bezier(0.2, 0, 0, 1) 0.06s, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .app.sidebar-expanded .sidebar-logout:hover,
+  .app.sidebar-expanded .sidebar-logout:focus-visible {
+    color: #ff8585;
+    border-color: rgba(255, 107, 107, .32);
+    background: rgba(255, 107, 107, .1);
+  }
+  .app[data-dashboard-theme="light"] .sidebar-account,
+  .app[data-dashboard-theme="light"] .sidebar-logout {
+    border-color: #d4e7fa;
+    background: #eaf4ff;
+  }
+  .app[data-dashboard-theme="light"] .sidebar-account:hover,
+  .app[data-dashboard-theme="light"] .sidebar-account:focus-visible,
+  .app[data-dashboard-theme="light"] .sidebar-logout:hover,
+  .app[data-dashboard-theme="light"] .sidebar-logout:focus-visible {
+    border-color: #b9d8f8;
+    background: #dceeff;
+  }
+
+  .app .header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+  }
+  .app .brand { justify-self: start; }
+  .app .header-device-center {
+    grid-column: 2;
+    justify-self: center;
+  }
+  .app .header-actions {
+    grid-column: 3;
+    justify-self: end;
+  }
+  .app .header-device-center .device-chips {
+    height: 40px;
+    gap: 10px;
+    padding: 0;
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none;
+  }
+  .app .header-device-center .device-chip {
+    height: 36px;
+    padding: 0 13px;
+    border-color: rgba(53, 216, 255, .16);
+    background: rgba(8, 22, 46, .46);
+    box-shadow: 0 5px 14px -10px rgba(22, 139, 255, .75);
+  }
+  .app .header-device-center .device-chip.online {
+    border-color: rgba(36, 215, 119, .24);
+  }
+  .app[data-dashboard-theme="light"] .header-device-center .device-chip {
+    border-color: #d8e8f8;
+    background: #f7faff;
+    box-shadow: 0 5px 14px -10px rgba(36, 76, 120, .28);
+  }
+  .app[data-dashboard-theme="light"] .header-device-center .device-chip.online {
+    border-color: rgba(0, 169, 110, .24);
+  }
+
+  @media (max-width: 900px) {
+    .app .header {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+    .app .header-device-center { margin-inline: 8px; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     /* Vach sang da chuyen tu .nav-item::after sang .nav-icon::after
        (::after cua .nav-item gio dung cho mui nhon tooltip). */
@@ -8350,5 +8662,534 @@ const styles = `
     .system-strip {
       transition: none !important;
     }
+  }
+
+  /* Application shell color modes. Detailed child-screen surfaces are mapped
+     to the same tokens in theme.css. */
+  .app[data-dashboard-theme="dark"] {
+    color-scheme: dark;
+    --primary: #168BFF;
+    --primary-2: #35D8FF;
+    --primary-hi: #285DDE;
+    --bg: #06142A;
+    --bg-deep: #020817;
+    --bg-panel: rgba(8, 22, 46, .78);
+    --border: rgba(53, 216, 255, .18);
+    --text: #EAF2FF;
+    --muted: #91A4C5;
+    --shadow: 0 12px 34px -14px rgba(22, 139, 255, .22);
+    --shadow-hover: 0 16px 40px -14px rgba(22, 139, 255, .34);
+  }
+
+  .theme-toggle {
+    flex: 0 0 auto;
+    transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
+  }
+  .theme-toggle:hover { transform: translateY(-1px); }
+  .theme-toggle:focus-visible,
+  .logout-button:focus-visible,
+  .user-box:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+  .user-menu {
+    background: linear-gradient(180deg, rgba(10,26,54,.97), rgba(6,20,42,.97));
+    box-shadow: 0 8px 24px rgba(2,8,23,.6);
+  }
+
+  .app[data-dashboard-theme="light"] {
+    color-scheme: light;
+    --primary: #087DF2;
+    --primary-2: #0969DA;
+    --primary-hi: #5145F5;
+    --bg: #F4F8FD;
+    --bg-deep: #EDF4FC;
+    --bg-panel: rgba(255, 255, 255, .94);
+    --border: #DCE8F5;
+    --text: #0A1833;
+    --muted: #5E7294;
+    --success: #00A96E;
+    --danger: #D9363E;
+    --warn: #D96308;
+    --shadow: 0 8px 24px -12px rgba(36, 76, 120, .22);
+    --shadow-hover: 0 14px 32px -14px rgba(8, 125, 242, .28);
+    --glow: 0 0 0 1px rgba(8, 125, 242, .08), 0 10px 24px -14px rgba(8, 125, 242, .22);
+    --glow-hover: 0 0 0 1px rgba(8, 125, 242, .16), 0 14px 30px -14px rgba(8, 125, 242, .30);
+    --trail: rgba(8, 125, 242, .65);
+    --surface-hi: rgba(255, 255, 255, .96);
+    background:
+      radial-gradient(circle at 76% 0%, rgba(40, 202, 255, .13), transparent 28%),
+      linear-gradient(180deg, #F8FBFF 0%, #EFF6FD 100%) !important;
+  }
+
+  .app[data-dashboard-theme="light"] .header {
+    background: rgba(255, 255, 255, .92) !important;
+    border-bottom-color: #E4EDF7 !important;
+    box-shadow: 0 5px 20px rgba(42, 71, 105, .08) !important;
+  }
+  .app[data-dashboard-theme="light"] .brand-logo img {
+    filter: drop-shadow(0 2px 5px rgba(8, 125, 242, .14));
+  }
+  .app[data-dashboard-theme="light"] .device-chips,
+  .app[data-dashboard-theme="light"] .header-actions .lang-switch,
+  .app[data-dashboard-theme="light"] .icon-button,
+  .app[data-dashboard-theme="light"] .logout-button {
+    background: #F5F8FC !important;
+    border-color: #E6EEF7 !important;
+  }
+  .app[data-dashboard-theme="light"] .icon-button:hover,
+  .app[data-dashboard-theme="light"] .logout-button:hover {
+    background: #EAF3FE !important;
+    border-color: #BFD9F7 !important;
+  }
+  .app[data-dashboard-theme="light"] .header-actions .lang-switch button:hover {
+    color: var(--primary-2);
+    background: #EAF3FE;
+  }
+  .app[data-dashboard-theme="light"] .header-actions .lang-switch button.active {
+    background: #EAF3FE;
+    color: var(--primary);
+    box-shadow: none;
+  }
+  .app[data-dashboard-theme="light"] .user-menu,
+  .app[data-dashboard-theme="light"] .notif-panel {
+    background: rgba(255, 255, 255, .98) !important;
+    box-shadow: 0 14px 36px rgba(36, 76, 120, .18);
+  }
+
+  .app[data-dashboard-theme="light"] .sidebar {
+    background: linear-gradient(180deg, #F8FBFF, #F1F7FD) !important;
+    border-right-color: #E1EBF6 !important;
+    color: var(--text) !important;
+  }
+  .app[data-dashboard-theme="light"] .sidebar-toggle {
+    color: #168BFF;
+    border-color: #C9E0FA;
+    background: linear-gradient(180deg, #FFFFFF, #EAF4FF);
+    box-shadow: 7px 0 18px rgba(36, 76, 120, .14);
+  }
+  .app[data-dashboard-theme="light"] .sidebar-toggle:hover,
+  .app[data-dashboard-theme="light"] .sidebar-toggle:focus-visible {
+    color: #fff;
+    border-color: #168BFF;
+    background: linear-gradient(135deg, #168BFF, #5145F5);
+  }
+  .app[data-dashboard-theme="light"] .nav-item {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: #516787 !important;
+  }
+  .app[data-dashboard-theme="light"] .nav-item:hover {
+    background: #E8F2FE !important;
+    border-color: #C9E0FA !important;
+    color: var(--primary) !important;
+  }
+  .app[data-dashboard-theme="light"] .nav-item.active {
+    background: linear-gradient(135deg, #168BFF, #5145F5) !important;
+    border-color: rgba(81, 69, 245, .22) !important;
+    color: #fff !important;
+    box-shadow: 0 8px 18px rgba(46, 102, 235, .28) !important;
+  }
+  .app[data-dashboard-theme="light"] .nav-icon {
+    background: transparent !important;
+    color: inherit !important;
+  }
+  .app[data-dashboard-theme="light"] .nav-item.active .nav-icon {
+    background: rgba(255, 255, 255, .14) !important;
+    color: #fff !important;
+  }
+  .app[data-dashboard-theme="light"] .security-card {
+    background: #EAF4FF !important;
+    border-color: #D4E7FA !important;
+  }
+
+  .app[data-dashboard-theme="light"] .content {
+    background:
+      radial-gradient(circle at 74% 0%, rgba(28, 203, 255, .10), transparent 25%),
+      #F5F9FE;
+  }
+  .app[data-dashboard-theme="light"] .dash-hero {
+    background:
+      radial-gradient(circle at 72% 0%, rgba(38, 214, 228, .16), transparent 35%),
+      linear-gradient(135deg, #F8FBFF, #EAF4FF) !important;
+    border-color: #DCEAF8 !important;
+    box-shadow: 0 8px 22px rgba(36, 76, 120, .08);
+  }
+  .app[data-dashboard-theme="light"] .dash-hero-session {
+    background: rgba(235, 247, 255, .72);
+    border-color: #D8EAF8;
+  }
+  .app[data-dashboard-theme="light"] .stat-card,
+  .app[data-dashboard-theme="light"] .panel {
+    background: rgba(255, 255, 255, .96);
+    border-color: #DFEAF5;
+    box-shadow: 0 7px 22px -12px rgba(36, 76, 120, .24);
+  }
+  .app[data-dashboard-theme="light"] .stat-card:hover,
+  .app[data-dashboard-theme="light"] .panel:hover {
+    border-color: #BFD9F5;
+  }
+  .app[data-dashboard-theme="light"] .stat-ring span,
+  .app[data-dashboard-theme="light"] .donut-legend-row,
+  .app[data-dashboard-theme="light"] .ring-gauge {
+    background: #F6FAFE;
+  }
+  .app[data-dashboard-theme="light"] .session-row:hover,
+  .app[data-dashboard-theme="light"] .dash-detainee-row:hover {
+    background: #F1F7FE;
+  }
+  .app[data-dashboard-theme="light"] .bar-chart-body {
+    background-image: linear-gradient(to top, rgba(36, 76, 120, .06) 1px, transparent 1px);
+    background-size: 100% 25%;
+  }
+  .app[data-dashboard-theme="light"] .hw-bar-track {
+    background: #DBE7F4;
+  }
+
+  /* Exact dashboard composition from the approved visual reference. */
+  .security-label { display: none; }
+
+  .app.dashboard-active {
+    grid-template-rows: 74px minmax(0, 1fr);
+  }
+  .app.dashboard-active .header {
+    min-width: 0;
+    padding: 0 22px;
+  }
+  .app.dashboard-active .brand {
+    gap: 12px;
+    min-width: 330px;
+  }
+  .app.dashboard-active .brand-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 0;
+  }
+  .app.dashboard-active .brand-logo img {
+    width: 48px;
+    height: 40px;
+    object-fit: contain;
+  }
+  .app.dashboard-active .brand-title {
+    width: 270px;
+    font-size: 16px;
+    line-height: 1.08;
+    letter-spacing: .1px;
+    text-transform: uppercase;
+  }
+  .app.dashboard-active .brand-subtitle {
+    margin-top: 3px;
+    font-size: 12px;
+  }
+  .app.dashboard-active .header-actions { gap: 8px; min-width: 0; }
+  .app.dashboard-active .device-chips {
+    height: 44px;
+    padding: 4px;
+    gap: 5px;
+    border-radius: 15px;
+  }
+  .app.dashboard-active .device-chip {
+    height: 34px;
+    padding: 0 10px;
+    background: rgba(53,216,255,.045);
+    border: 1px solid rgba(53,216,255,.10);
+  }
+  .app.dashboard-active .header-actions .lang-switch { height: 44px; }
+  .app.dashboard-active .avatar { width: 44px; height: 44px; }
+  .app.dashboard-active .user-info { min-width: 145px; }
+  .app.dashboard-active .logout-button { min-width: 138px; justify-content: center; }
+
+  .app.dashboard-active .sidebar {
+    align-items: stretch;
+    padding: 14px 10px 12px 10px;
+  }
+  .app.dashboard-active .nav {
+    align-items: stretch;
+    gap: 7px;
+  }
+  .app.dashboard-active .nav-item {
+    width: 100%;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 5px;
+    border-radius: 12px;
+  }
+  .app.dashboard-active .nav-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+  }
+  .app.dashboard-active .nav-icon svg { width: 18px; height: 18px; }
+  .app.dashboard-active .nav-item.active .nav-icon {
+    background: rgba(255, 255, 255, .18) !important;
+    color: white !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+  }
+  .app.sidebar-expanded .sidebar {
+    align-items: stretch;
+    padding: 14px 10px 12px 10px;
+  }
+  .app.sidebar-expanded .nav { align-items: stretch; }
+  .app.sidebar-expanded .nav-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 5px;
+  }
+  .app.sidebar-expanded .nav-item[data-tip]::before,
+  .app.sidebar-expanded .nav-item[data-tip]::after,
+  .app.sidebar-expanded .sidebar-account[data-tip]::before,
+  .app.sidebar-expanded .sidebar-account[data-tip]::after,
+  .app.sidebar-expanded .sidebar-logout[data-tip]::before,
+  .app.sidebar-expanded .sidebar-logout[data-tip]::after { display: none !important; }
+
+  .app.dashboard-active .content {
+    padding: 12px 20px 18px;
+    overflow: hidden;
+  }
+  .app.dashboard-active .dashboard-page {
+    gap: 14px;
+    padding: 0;
+  }
+  .app.dashboard-active .dashboard-page .dash-hero {
+    position: relative;
+    isolation: isolate;
+    min-height: 108px;
+    padding: 18px 24px;
+    margin: 0;
+    grid-template-columns: minmax(320px, 1fr) minmax(590px, .92fr);
+    gap: 24px;
+    overflow: hidden;
+    border-radius: 17px;
+  }
+  .app.dashboard-active .dashboard-page .dash-hero::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -40% 42% -80% 19%;
+    transform: rotate(-16deg);
+    background:
+      linear-gradient(125deg, transparent 8%, rgba(66,86,255,.30) 34%, rgba(138,51,255,.19) 51%, transparent 72%);
+    filter: blur(1px);
+    pointer-events: none;
+  }
+  .app.dashboard-active .dashboard-page .dash-hero h1 {
+    font-size: 19px;
+    line-height: 1.2;
+  }
+  .app.dashboard-active .dashboard-page .dash-hero > div > p {
+    margin-top: 5px;
+    font-size: 13px;
+    font-weight: 650;
+  }
+  .dash-hero-wave { font-size: 16px; }
+  .dash-hero-motto {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .app.dashboard-active .dash-hero-session {
+    min-height: 70px;
+    padding: 10px 12px 10px 18px;
+    justify-content: space-between;
+    border-radius: 14px;
+  }
+  .app.dashboard-active .dash-hero-session-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .app.dashboard-active .dash-hero-session .button {
+    min-width: 254px;
+    height: 48px;
+    justify-content: center;
+    border-radius: 13px;
+    font-size: 14px;
+  }
+  .app.dashboard-active .dash-hero-session .dashboard-primary-action {
+    min-width: 254px;
+    height: 48px;
+    font-size: 14px;
+  }
+
+  .app.dashboard-active .dashboard-page .stat-grid { gap: 14px; }
+  .app.dashboard-active .dashboard-page .stat-card {
+    min-height: 96px;
+    padding: 14px 20px;
+    border-left-width: 1px;
+    border-radius: 15px;
+  }
+  .app.dashboard-active .stat-card.blue {
+    --accent: #19B9FF; --soft: rgba(25,185,255,.15);
+    border-color: rgba(25,185,255,.24);
+    background: radial-gradient(circle at 92% 50%, rgba(0,214,255,.12), transparent 42%), var(--bg-panel);
+  }
+  .app.dashboard-active .stat-card.purple {
+    --accent: #8B45FF; --soft: rgba(139,69,255,.16);
+    border-color: rgba(139,69,255,.24);
+    background: radial-gradient(circle at 92% 50%, rgba(139,69,255,.12), transparent 42%), var(--bg-panel);
+  }
+  .app.dashboard-active .stat-card.orange {
+    --accent: #FF8412; --soft: rgba(255,132,18,.16);
+    border-color: rgba(255,132,18,.25);
+    background: radial-gradient(circle at 92% 50%, rgba(255,132,18,.13), transparent 42%), var(--bg-panel);
+  }
+  .app.dashboard-active .stat-card.green {
+    --accent: #13D98A; --soft: rgba(19,217,138,.16);
+    border-color: rgba(19,217,138,.24);
+    background: radial-gradient(circle at 92% 50%, rgba(19,217,138,.12), transparent 42%), var(--bg-panel);
+  }
+  .app.dashboard-active .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    color: #fff;
+    background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 78%, white), var(--accent));
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 48%, transparent);
+  }
+  .app.dashboard-active .stat-icon svg { width: 21px; height: 21px; }
+  .app.dashboard-active .stat-content > span { color: var(--accent); font-size: 11.5px; }
+  .app.dashboard-active .stat-content strong { font-size: 22px; }
+  .app.dashboard-active .sparkline { color: var(--accent); }
+
+  .app.dashboard-active .dashboard-page .dashboard-body {
+    gap: 14px 16px;
+    grid-template-columns: 1.12fr 1fr;
+    grid-template-rows: 1fr .95fr 1.25fr;
+  }
+  .app.dashboard-active .dashboard-page .dashboard-body > .panel {
+    border-radius: 15px;
+    background:
+      linear-gradient(145deg, rgba(13,35,70,.22), transparent 45%),
+      var(--bg-panel);
+  }
+  .app.dashboard-active .dashboard-page .panel-header {
+    height: 40px;
+    padding: 0 20px;
+  }
+  .app.dashboard-active .dashboard-page .panel-header h3 { font-size: 14px; }
+  .panel-chevron {
+    display: grid;
+    place-items: center;
+    color: var(--primary-2);
+  }
+  .panel-chevron svg { width: 16px; height: 16px; }
+  .app.dashboard-active .dashboard-page .bar-chart { padding: 4px 20px 8px; }
+  .app.dashboard-active .dashboard-page .donut-wrap {
+    grid-template-columns: 132px 1fr;
+    padding: 4px 24px 8px;
+    gap: 28px;
+  }
+  .app.dashboard-active .dashboard-page .donut { width: 116px; height: 116px; }
+  .app.dashboard-active .dashboard-page .donut-legend-row {
+    padding: 4px 8px;
+    background: transparent;
+  }
+  .app.dashboard-active .dashboard-page .session-list,
+  .app.dashboard-active .dashboard-page .dash-detainee-list,
+  .app.dashboard-active .dashboard-page .activity-feed,
+  .app.dashboard-active .dashboard-page .hw-status {
+    overflow: hidden;
+  }
+  .app.dashboard-active .dashboard-page .session-row,
+  .app.dashboard-active .dashboard-page .dash-detainee-row { padding: 7px 20px; }
+  .app.dashboard-active .dashboard-page .activity-feed { padding: 5px 22px 10px; }
+  .app.dashboard-active .dashboard-page .activity-row { padding: 7px 0; }
+  .app.dashboard-active .dashboard-page .hw-status { padding: 8px 22px 10px; }
+  .app.dashboard-active .dashboard-page .hw-rings { gap: 10px; }
+  .hardware-tile {
+    --hardware-color: #19B9FF;
+    height: 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 1px solid color-mix(in srgb, var(--hardware-color) 52%, transparent);
+    border-radius: 11px;
+    background:
+      radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--hardware-color) 18%, transparent), transparent 66%),
+      rgba(8,22,46,.66);
+    box-shadow:
+      inset 0 0 18px color-mix(in srgb, var(--hardware-color) 10%, transparent),
+      0 0 15px -9px var(--hardware-color);
+  }
+  .hardware-tile-green { --hardware-color: #13D98A; }
+  .hardware-tile-purple { --hardware-color: #8B45FF; }
+  .hardware-tile-blue { --hardware-color: #168BFF; }
+  .hardware-tile-pink { --hardware-color: #EB39C4; }
+  .hardware-tile-icon {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    color: #fff;
+    background: linear-gradient(145deg, color-mix(in srgb, var(--hardware-color) 72%, white), var(--hardware-color));
+    box-shadow: 0 0 14px color-mix(in srgb, var(--hardware-color) 55%, transparent);
+  }
+  .hardware-tile-icon svg { width: 18px; height: 18px; }
+  .hardware-tile strong {
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1;
+    letter-spacing: .15px;
+  }
+  .app.dashboard-active .dashboard-page .hw-bars { gap: 7px; }
+  .app.dashboard-active .dashboard-page .hw-bar-head {
+    margin-bottom: 4px;
+    font-size: 12px;
+  }
+  .app.dashboard-active .dashboard-page .hw-bar-track { height: 9px; }
+  .app.dashboard-active .dashboard-page .hw-meta { display: none; }
+
+  .app.dashboard-active[data-dashboard-theme="light"] .dashboard-page .dashboard-body > .panel {
+    background: rgba(255,255,255,.96);
+  }
+  .app.dashboard-active[data-dashboard-theme="light"] .stat-icon { color: #fff; }
+  .app.dashboard-active[data-dashboard-theme="light"] .hardware-tile {
+    background:
+      radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--hardware-color) 13%, transparent), transparent 68%),
+      rgba(248,251,255,.96);
+  }
+
+  @media (max-width: 1380px) {
+    .app.dashboard-active:not(.sidebar-expanded) { grid-template-columns: 56px minmax(0, 1fr); }
+    .app.dashboard-active .brand { min-width: 285px; }
+    .app.dashboard-active .brand-title { width: 225px; font-size: 14px; }
+    .app.dashboard-active .user-info { display: none; }
+    .app.dashboard-active .dash-hero-session .button,
+    .app.dashboard-active .dash-hero-session .dashboard-primary-action { min-width: 180px; }
+    .app.dashboard-active .dashboard-page .dash-hero {
+      grid-template-columns: minmax(280px, 1fr) minmax(500px, .95fr);
+    }
+  }
+
+  /* Keep one consistent application shell on every tab. */
+  .app.dashboard-active { grid-template-columns: 64px minmax(0, 1fr); }
+  .app.dashboard-active.sidebar-expanded { grid-template-columns: 210px minmax(0, 1fr); }
+  .app.non-dashboard .content {
+    padding: 6px;
+    overflow: auto;
+  }
+
+  @media (max-width: 1380px) {
+    .app.dashboard-active:not(.sidebar-expanded) { grid-template-columns: 64px minmax(0, 1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app,
+    .theme-toggle,
+    .sidebar-toggle,
+    .sidebar-toggle-chevron,
+    .nav-label,
+    .sidebar-account,
+    .sidebar-account-copy,
+    .sidebar-logout,
+    .sidebar-logout-label { transition: none !important; }
   }
 `;

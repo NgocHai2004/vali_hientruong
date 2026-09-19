@@ -1,0 +1,379 @@
+/* Application-wide theme bridge.
+   Dashboard owns the theme state; this file makes every child screen consume
+   the same semantic surfaces, including dialogs and specialist workflows. */
+
+:root[data-app-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-app-theme="light"] {
+  color-scheme: light;
+  --app-canvas: #f5f9fe;
+  --app-surface: #ffffff;
+  --app-surface-soft: #f4f8fd;
+  --app-surface-hover: #edf5fe;
+  --app-surface-active: #e4f0fd;
+  --app-line: #dce8f5;
+  --app-line-strong: #bed7f1;
+  --app-text: #0a1833;
+  --app-text-soft: #5e7294;
+  --app-blue: #168bff;
+  --app-purple: #5145f5;
+  --app-shadow: 0 10px 28px -16px rgba(36, 76, 120, .28);
+}
+
+:root[data-app-theme="light"] body,
+:root[data-app-theme="light"] #root {
+  color: var(--app-text);
+  background: var(--app-canvas);
+}
+
+/* Shared page surfaces, cards and forms */
+:root[data-app-theme="light"] .app .page,
+:root[data-app-theme="light"] .app .session-detail-page,
+:root[data-app-theme="light"] .app .capture-page,
+:root[data-app-theme="light"] .app .stf {
+  color: var(--app-text);
+}
+
+:root[data-app-theme="light"] .app .panel,
+:root[data-app-theme="light"] .app .table-wrap,
+:root[data-app-theme="light"] .app .session-list-table-wrap,
+:root[data-app-theme="light"] .app .session-detail-head,
+:root[data-app-theme="light"] .app .sync-table-wrap,
+:root[data-app-theme="light"] .app .feature-card,
+:root[data-app-theme="light"] .app .info-tile,
+:root[data-app-theme="light"] .app .report-stat,
+:root[data-app-theme="light"] .app .cat,
+:root[data-app-theme="light"] .app .side-card {
+  color: var(--app-text);
+  background: var(--app-surface) !important;
+  border-color: var(--app-line) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+
+:root[data-app-theme="light"] .app .session-detail-head.closed {
+  background: var(--app-surface-soft) !important;
+}
+
+/* Collapsed sidebar tooltip must not inherit the active item's white text or
+   the dark-mode bubble. Keep the bubble and its pointer on one light surface. */
+:root[data-app-theme="light"] .app .nav-item[data-tip]::before,
+:root[data-app-theme="light"] .app .security-card[data-tip]::before {
+  color: var(--app-text) !important;
+  background: linear-gradient(180deg, #ffffff, #f4f8fd) !important;
+  border-color: var(--app-line-strong) !important;
+  box-shadow: 0 10px 24px -10px rgba(36, 76, 120, .28) !important;
+}
+
+:root[data-app-theme="light"] .app .nav-item[data-tip]::after,
+:root[data-app-theme="light"] .app .security-card[data-tip]::after {
+  background: #f8fbff !important;
+  border-left-color: var(--app-line-strong) !important;
+  border-bottom-color: var(--app-line-strong) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.input, .control, textarea, select),
+:root[data-app-theme="light"] .app .toolbar .search,
+:root[data-app-theme="light"] .app .sync-toolbar .control,
+:root[data-app-theme="light"] .app .session-modal-static {
+  color: var(--app-text) !important;
+  background: var(--app-surface) !important;
+  border-color: var(--app-line-strong) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.input, .control, textarea)::placeholder,
+:root[data-app-theme="light"] .app .toolbar .search::placeholder {
+  color: #7a8ca9 !important;
+}
+
+:root[data-app-theme="light"] .app :is(.input, .control, textarea, select):focus {
+  border-color: var(--app-blue) !important;
+  box-shadow: 0 0 0 3px rgba(22, 139, 255, .12) !important;
+}
+
+:root[data-app-theme="light"] .app option {
+  color: var(--app-text);
+  background: #fff;
+}
+
+/* Tables and pagers */
+:root[data-app-theme="light"] .app :is(.tbl, .session-list-table, .sync-table) thead th,
+:root[data-app-theme="light"] .app .scp-t thead th {
+  color: #116dc8 !important;
+  background: #edf6ff !important;
+  border-color: var(--app-line) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.tbl, .session-list-table, .sync-table) tbody td,
+:root[data-app-theme="light"] .app .scp-t tbody td {
+  color: var(--app-text) !important;
+  border-color: var(--app-line) !important;
+  background: var(--app-surface);
+}
+
+:root[data-app-theme="light"] .app :is(.tbl, .session-list-table, .sync-table) tbody tr:hover td,
+:root[data-app-theme="light"] .app :is(.tbl, .session-list-table, .sync-table) tbody tr:hover,
+:root[data-app-theme="light"] .app .scp-t tbody tr:hover td {
+  background: var(--app-surface-hover) !important;
+}
+
+:root[data-app-theme="light"] .app .sync-table tbody tr.row-selected,
+:root[data-app-theme="light"] .app .sync-table tbody tr.row-selected:hover {
+  background: rgba(22, 139, 255, .10) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.pagination button, .session-list-toolbar, .session-list-footer, .session-list-filters),
+:root[data-app-theme="light"] .app .sync-table-wrap .pagination button,
+:root[data-app-theme="light"] .app .sync-table-wrap .session-list-toolbar {
+  color: var(--app-text) !important;
+  background: var(--app-surface-soft) !important;
+  border-color: var(--app-line) !important;
+}
+
+/* Dialogs */
+:root[data-app-theme="light"] .app :is(.modal-backdrop, .session-modal-backdrop, .smp-modal-bd) {
+  background: rgba(24, 46, 78, .35) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.modal, .modal-panel, .session-modal, .smp-modal) {
+  color: var(--app-text) !important;
+  background: #fff !important;
+  border-color: var(--app-line) !important;
+  box-shadow: 0 24px 60px rgba(36, 76, 120, .22) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.modal-head, .session-modal-head, .session-modal-actions, .modal-actions) {
+  color: var(--app-text) !important;
+  background: var(--app-surface) !important;
+  border-color: var(--app-line) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.close-x, .session-modal-close) {
+  color: var(--app-text-soft) !important;
+  background: var(--app-surface-soft) !important;
+  border-color: var(--app-line) !important;
+}
+
+/* Cases, crime-scene matching and full trace detail */
+:root[data-app-theme="light"] .app :is(.smp, .scp, .stf) {
+  --smp-line: #d8e6f4;
+  --smp-line2: #c9dced;
+  --smp-dim: #607593;
+  --smp-blue: #087df2;
+  color: var(--app-text) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.smp-panel, .stf-card, .scene-report, .scene-zoom-modal) {
+  color: var(--app-text) !important;
+  background: #fff !important;
+  border-color: var(--app-line) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.smp-field, .smp-search, .smp-select, .smp-trg, .smp-btn-ghost, .smp-btn-line, .smp-icon-btn, .smp-menu-btn, .smp-adv-num, .smp-adv-sel, .smp-modal-in, .scp-date, .scp-date input, .stf-file, .stf-latent, .stf-portrait-empty) {
+  color: var(--app-text) !important;
+  background: var(--app-surface-soft) !important;
+  border-color: var(--app-line-strong) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.smp-field input, .smp-field select, .smp-search input, .smp-select select) {
+  color: var(--app-text) !important;
+  background: transparent !important;
+}
+
+:root[data-app-theme="light"] .app :is(.smp-btn-ghost, .smp-btn-line, .smp-icon-btn, .smp-menu-btn, .smp-trg):hover,
+:root[data-app-theme="light"] .app :is(.smp-opt, .smp-sub-row, .smp-mt-row):hover {
+  color: #0969da !important;
+  background: var(--app-surface-hover) !important;
+  border-color: #9ec9f3 !important;
+}
+
+:root[data-app-theme="light"] .app :is(.smp-menu-pop, .smp-adv, .smp-pop-subj) {
+  color: var(--app-text) !important;
+  background: #fff !important;
+  border-color: var(--app-line) !important;
+  box-shadow: 0 18px 40px rgba(36, 76, 120, .20) !important;
+}
+
+:root[data-app-theme="light"] .app :is(.smp-menu-pop > button, .smp-menu-pop > a, .smp-opt, .smp-sub-row, .smp-tr-row, .smp-mt-row) {
+  color: var(--app-text) !important;
+  border-color: var(--app-line) !important;
+  background: #fff !important;
+}
+
+:root[data-app-theme="light"] .app :is(.smp-mt-head, .scp-t thead th) {
+  background: #edf6ff !important;
+}
+
+:root[data-app-theme="light"] .app :is(.smp-badge, .scp-num .smp-badge, .stf-chip, .stf-chip-fill) {
+  color: #24527f !important;
+  background: #eaf3fc !important;
+  border-color: #cfdfef !important;
+}
+
+:root[data-app-theme="light"] .app :is(.smp-thumb-sm, .smp-thumb-md, .smp-sub-photo, .smp-sub-avatar, .stf-file-img, .stf-doc-card-preview) {
+  background: #eaf1f8 !important;
+  border-color: var(--app-line) !important;
+}
+
+/* Trace-row icon actions: the base scene stylesheet uses navy controls so the
+   icons remain readable over dark cards. On light cards use semantic tints. */
+:root[data-app-theme="light"] .app .smp-act :is(.smp-act-view, .smp-act-edit) {
+  color: #245f99 !important;
+  background: #edf6ff !important;
+  border-color: #b8d5f2 !important;
+  box-shadow: none !important;
+}
+
+:root[data-app-theme="light"] .app .smp-act :is(.smp-act-view, .smp-act-edit):hover:not(:disabled),
+:root[data-app-theme="light"] .app .smp-act :is(.smp-act-view, .smp-act-edit):focus-visible {
+  color: #075fb8 !important;
+  background: #dceeff !important;
+  border-color: #75ade4 !important;
+  box-shadow: 0 0 0 3px rgba(22, 139, 255, .12) !important;
+}
+
+:root[data-app-theme="light"] .app .smp-act .smp-act-del {
+  color: #bd3651 !important;
+  background: #fff0f3 !important;
+  border-color: #efbdc8 !important;
+  box-shadow: none !important;
+}
+
+:root[data-app-theme="light"] .app .smp-act .smp-act-del:hover:not(:disabled),
+:root[data-app-theme="light"] .app .smp-act .smp-act-del:focus-visible {
+  color: #9f1f3a !important;
+  background: #ffe0e7 !important;
+  border-color: #df7d91 !important;
+  box-shadow: 0 0 0 3px rgba(217, 54, 62, .10) !important;
+}
+
+:root[data-app-theme="light"] .app .smp-act button:disabled,
+:root[data-app-theme="light"] .app .smp-act button:disabled:hover {
+  color: #8ea0b7 !important;
+  background: #f1f5f9 !important;
+  border-color: #d7e1eb !important;
+  box-shadow: none !important;
+}
+
+/* Bulk-delete control beside the trace filter. */
+:root[data-app-theme="light"] .app .smp-panel-trace .smp-bulk-del {
+  color: #bd3651 !important;
+  background: #fff0f3 !important;
+  border-color: #efbdc8 !important;
+  box-shadow: none !important;
+}
+
+:root[data-app-theme="light"] .app .smp-panel-trace .smp-bulk-del:hover:not(:disabled),
+:root[data-app-theme="light"] .app .smp-panel-trace .smp-bulk-del:focus-visible {
+  color: #9f1f3a !important;
+  background: #ffe0e7 !important;
+  border-color: #df7d91 !important;
+  box-shadow: 0 0 0 3px rgba(217, 54, 62, .10) !important;
+}
+
+:root[data-app-theme="light"] .app .smp-panel-trace .smp-bulk-del:disabled,
+:root[data-app-theme="light"] .app .smp-panel-trace .smp-bulk-del:disabled:hover {
+  color: #91a1b5 !important;
+  background: #f1f5f9 !important;
+  border-color: #d7e1eb !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* Data-capture workflow: light mode uses paper surfaces; dark mode keeps the
+   existing navy capture palette. Printed A4 previews intentionally stay white. */
+:root[data-app-theme="light"] .app .capture-page.cap-flat {
+  --cf-blue: #168bff;
+  --cf-blue-hi: #5145f5;
+  --cf-head: #168bff;
+  --cf-text: #0a1833;
+  --cf-muted: #5e7294;
+  --cf-line: #dce8f5;
+  --cf-line-hi: #bed7f1;
+  --cf-edge: #a8c5e2;
+  --cf-field: #f8fbff;
+  --paper: #fff;
+  --paper-line: #dce8f5;
+  --paper-text: #0a1833;
+  --paper-muted: #5e7294;
+  --maroon: #168bff;
+  --maroon-2: #5145f5;
+  color: var(--app-text) !important;
+  background: var(--app-canvas) !important;
+}
+
+:root[data-app-theme="light"] .app .cap-flat .cap-sec {
+  color: var(--app-text) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+:root[data-app-theme="light"] .app .cap-flat .rec-sum {
+  color: var(--app-text) !important;
+  background: #f7faff !important;
+  border-color: var(--app-line) !important;
+  box-shadow: none !important;
+}
+
+:root[data-app-theme="light"] .app .cap-flat .case-action-bar {
+  color: var(--app-text) !important;
+  background: transparent !important;
+  border-color: var(--app-line) !important;
+  box-shadow: none !important;
+}
+
+/* Preserve the compact underline heading used by dark mode. Theme switching
+   changes color only; it must not bring back the old full-width title bars. */
+:root[data-app-theme="light"] .app .cap-flat .cap-sec-title,
+:root[data-app-theme="light"] .app .cap-flat .cap-sub-title {
+  color: #087df2 !important;
+  background: transparent !important;
+  border-bottom-color: #c9def4 !important;
+}
+
+:root[data-app-theme="light"] .app .cap-flat .cap-sec-head {
+  color: #087df2 !important;
+  background: transparent !important;
+  border-bottom-color: #c9def4 !important;
+}
+
+:root[data-app-theme="light"] .app .cap-flat :is(.cap-sec-body .control, .cap-sec-body .cap-textarea, .rec-sum-input, .fp-preview-thumb, .fp-plain-thumb, .body-shot-frame) {
+  color: var(--app-text) !important;
+  background: #f8fbff !important;
+  border-color: var(--app-line-strong) !important;
+}
+
+:root[data-app-theme="light"] .app .cap-flat :is(.cap-sec-body .control, .cap-sec-body .cap-textarea, .rec-sum-input):disabled {
+  color: #6b7f9e !important;
+  background: #eef4fa !important;
+}
+
+/* Secondary actions retain clear affordance in both themes. */
+:root[data-app-theme="light"] .app :is(.btn-ghost, .btn-secondary, .button:not(.primary), .sync-toolbar .button:not(.primary)) {
+  color: #31577e;
+  background: #f3f8fd;
+  border-color: #c8dcef;
+}
+
+:root[data-app-theme="light"] .app :is(.btn-ghost, .btn-secondary, .button:not(.primary), .sync-toolbar .button:not(.primary)):hover:not(:disabled) {
+  color: #0969da;
+  background: #e8f3ff;
+  border-color: #91c0ed;
+}
+
+/* Ensure native controls and scrollbars visually follow the selected mode. */
+:root[data-app-theme="light"] .app input[type="checkbox"],
+:root[data-app-theme="light"] .app input[type="radio"] {
+  accent-color: var(--app-blue);
+}
+
+:root[data-app-theme="light"] .app ::-webkit-scrollbar-thumb {
+  background: #bfd1e4;
+}
+
+:root[data-app-theme="light"] .app ::-webkit-scrollbar-track {
+  background: #edf4fb;
+}

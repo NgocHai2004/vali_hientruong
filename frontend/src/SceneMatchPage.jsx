@@ -497,6 +497,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
         <SceneTracePanel
           t={t}
           traces={shownTraces}
+          allTraces={traces}
           total={traces.length}
           q={traceQ}
           setQ={setTraceQ}
@@ -801,7 +802,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           <div className="smp-modal smp-modal-sm" role="dialog" aria-modal="true">
             <div className="smp-modal-head">
               <span className="smp-modal-title">
-                {t(pendingDelete.length > 1 ? "scene.del.title_multi" : "scene.del.title")}
+                {t(pendingDelete.length > 1 ? "scene.del.title_all" : "scene.del.title")}
               </span>
               <button
                 type="button"
@@ -813,7 +814,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
             <div className="smp-modal-msg">
               {pendingDelete.length === 1
                 ? t("scene.del.body", { n: traceCode(pendingDelete[0]) })
-                : t("scene.del.body_multi", { n: pendingDelete.length })}
+                : t("scene.del.body_all", { n: pendingDelete.length })}
             </div>
             <div className="smp-modal-foot">
               <button type="button" className="smp-modal-cancel" onClick={() => setPendingDelete([])}>
@@ -939,29 +940,12 @@ function PopMenu({
 
 /* ---------- Panel: DẤU VẾT HIỆN TRƯỜNG (data thật) ---------- */
 function SceneTracePanel({
-  t, traces, total, q, setQ, traceCode, formatDateTime,
+  t, traces, allTraces, total, q, setQ, traceCode, formatDateTime,
   onAddFiles, uploading, onDelete, onEdit, sort, setSort,
 }) {
   const [zoom, setZoom] = useState(null);
-  const [selectedIds, setSelectedIds] = useState(() => new Set());
-  const selectedItems = traces.filter((it) => selectedIds.has(it.id));
 
-  useEffect(() => {
-    const visibleIds = new Set(traces.map((it) => it.id));
-    setSelectedIds((current) => {
-      const next = new Set([...current].filter((id) => visibleIds.has(id)));
-      return next.size === current.size ? current : next;
-    });
-  }, [traces]);
-
-  const toggleOne = (id) => setSelectedIds((current) => {
-    const next = new Set(current);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    return next;
-  });
-
-  // Xem / Chinh sua nam tren tung dong; xoa dung nut hang loat tren thanh cong cu.
+  // Xem, chỉnh sửa hoặc xoá riêng từng dấu vết ngay trên dòng tương ứng.
   const actions = (it, grid) => (
     <div className={"smp-act" + (grid ? " smp-act-grid" : "")} onClick={(e) => e.stopPropagation()}>
       <button
@@ -1034,14 +1018,10 @@ function SceneTracePanel({
           <button
             type="button"
             className="smp-bulk-del"
-            disabled={uploading || selectedItems.length === 0}
-            onClick={() => onDelete(selectedItems)}
-            title={selectedItems.length > 0
-              ? t("scene.del.selected", { n: selectedItems.length })
-              : t("scene.del.select_first")}
-            aria-label={selectedItems.length > 0
-              ? t("scene.del.selected", { n: selectedItems.length })
-              : t("scene.del.select_first")}
+            disabled={uploading || allTraces.length === 0}
+            onClick={() => onDelete(allTraces)}
+            title={t("scene.del.all", { n: allTraces.length })}
+            aria-label={t("scene.del.all", { n: allTraces.length })}
           >
             <IcTrash s={15} />
           </button>
@@ -1068,24 +1048,7 @@ function SceneTracePanel({
             <div
               key={it.id}
               className="smp-tr-row"
-              role="button"
-              tabIndex={0}
-              aria-pressed={selectedIds.has(it.id)}
-              aria-label={t("scene.select_trace", { code: traceCode(it) })}
-              onClick={() => toggleOne(it.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  toggleOne(it.id);
-                }
-              }}
             >
-              <span
-                className={"smp-tr-selected-mark" + (selectedIds.has(it.id) ? " visible" : "")}
-                aria-hidden="true"
-              >
-                <IcTick s={16} />
-              </span>
               <img
                 className="smp-thumb-md"
                 src={it.url}
