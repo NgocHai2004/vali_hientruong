@@ -9531,7 +9531,7 @@ textarea.input {
 .cap-flat .cap-sheet--split {
   max-width: none;
   margin: 0;
-  padding: 9.5px 20px 0;
+  padding: 6px 20px 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr);
   /* NGUON GOC cua "khoang trong rat lon" giua muc V va hang nut: `.case-main`
@@ -9546,15 +9546,12 @@ textarea.input {
   flex: 0 1 auto;
   min-height: 0;
   overflow: auto;
-  /* row-gap 16px: tach ba hang cua to giay (I+II | IV — III — V). Truoc de 0 vi
-     ca trang phai vua khit mot man; gio to giay da cuon duoc (overflow: auto o
-     duoi) nen tach ra cho de doc. */
-  gap: 12px 26px;
+  /* row-gap: tach ba hang cua to giay (I+II | IV — III — V). */
+  gap: 8px 24px;
   align-items: start;
 }
-/* gap 14px: khoang giua hai muc xep chong trong cung mot cot (I -> II). Truoc de
-   4px, tieu de muc II gan nhu dinh vao o nhap cuoi cua muc I. */
-.cap-flat .cap-col { min-width: 0; display: flex; flex-direction: column; gap: 10.5px; }
+/* gap: khoang giua hai muc xep chong trong cung mot cot (I -> II). */
+.cap-flat .cap-col { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 /* HAI MUC CUNG MOT HANG (muc II "Thong tin vu viec" | muc "Can bo").
    Nam trong cot trai cua .cap-sheet--split, chia doi tiep => moi muc mot nua cot.
    Khe 20px dung bang khe cot cua .cap-grid nen o nhap cua hai muc thang hang voi
@@ -10306,27 +10303,29 @@ textarea.input {
    auto-fit tu bo cot. */
 .cap-flat .rec-sum {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  align-items: end;
-  gap: 8px 22px;
-  padding: 8px 20px 9px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: center;
+  gap: 3px 16px;
+  padding: 3px 18px 4px;
   background: #f7f8fa;
   border-bottom: 1px solid var(--cf-line);
 }
 .cap-flat .rec-sum-item {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
   min-width: 0;
 }
 .cap-flat .rec-sum-label {
-  font-size: 10.5px;
+  font-size: 10px;
+  line-height: 1.15;
   font-weight: 600;
   color: var(--cf-muted);
   white-space: nowrap;
 }
 .cap-flat .rec-sum-value {
-  font-size: 12px;
+  font-size: 11.5px;
+  line-height: 1.2;
   font-weight: 700;
   color: var(--cf-text);
   /* Khong cat thong tin nghiep vu: cho xuong dong thay vi ellipsis. */
@@ -10336,17 +10335,18 @@ textarea.input {
    doc nhu mot dai thong tin chu khong nhu mot hang o nhap. */
 .cap-flat .rec-sum-input {
   font: inherit;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--cf-text);
   background: none;
   border: 1px solid transparent;
-  border-radius: 5px;
-  padding: 1px 5px;
-  margin-left: -5px;
-  min-width: 92px;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-left: -4px;
+  min-width: 80px;
   max-width: 200px;
+  height: 22px;
 }
 .cap-flat .rec-sum-input:hover:not(:disabled) { border-color: var(--cf-edge); background: #fff; }
 .cap-flat .rec-sum-input:focus {
@@ -10357,10 +10357,10 @@ textarea.input {
 }
 .cap-flat .rec-sum-input::placeholder { font-weight: 500; color: #9aa3b2; }
 .cap-flat .rec-sum-input:disabled { color: var(--cf-text); opacity: 1; }
-.cap-flat select.rec-sum-input { min-width: 108px; }
+.cap-flat select.rec-sum-input { min-width: 100px; }
 /* Trang thai: chu + dau hieu ky tu, mau chi la lop thu hai (khong dua vao mau). */
 .cap-flat .rec-sum-status {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #98501f;
   white-space: nowrap;

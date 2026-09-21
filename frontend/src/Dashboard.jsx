@@ -3819,15 +3819,17 @@ const styles = `
   }
 
   .brand-title {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 800;
-    letter-spacing: .1px;
+    letter-spacing: .5px;
+    white-space: nowrap;
   }
 
   .brand-subtitle {
     margin-top: 5px;
     font-size: 14px;
     color: var(--muted);
+    white-space: nowrap;
   }
 
   .header-actions { gap: 14px; }
@@ -8914,8 +8916,9 @@ const styles = `
     padding: 0 22px;
   }
   .app.dashboard-active .brand {
-    gap: 12px;
-    min-width: 330px;
+    gap: 16px;
+    min-width: 0;
+    margin-left: 6px;
   }
   .app.dashboard-active .brand-logo {
     width: 48px;
@@ -8928,15 +8931,17 @@ const styles = `
     object-fit: contain;
   }
   .app.dashboard-active .brand-title {
-    width: 270px;
-    font-size: 16px;
-    line-height: 1.08;
-    letter-spacing: .1px;
+    width: auto;
+    font-size: 15px;
+    line-height: 1.2;
+    letter-spacing: .5px;
+    white-space: nowrap;
     text-transform: uppercase;
   }
   .app.dashboard-active .brand-subtitle {
     margin-top: 3px;
     font-size: 12px;
+    white-space: nowrap;
   }
   .app.dashboard-active .header-actions { gap: 8px; min-width: 0; }
   .app.dashboard-active .device-chips {
@@ -9216,8 +9221,8 @@ const styles = `
 
   @media (max-width: 1380px) {
     .app.dashboard-active:not(.sidebar-expanded) { grid-template-columns: 56px minmax(0, 1fr); }
-    .app.dashboard-active .brand { min-width: 285px; }
-    .app.dashboard-active .brand-title { width: 225px; font-size: 14px; }
+    .app.dashboard-active .brand { min-width: 0; gap: 12px; margin-left: 4px; }
+    .app.dashboard-active .brand-title { width: auto; font-size: 13px; letter-spacing: .3px; }
     .app.dashboard-active .user-info { display: none; }
     .app.dashboard-active .dash-hero-session .button,
     .app.dashboard-active .dash-hero-session .dashboard-primary-action { min-width: 180px; }
