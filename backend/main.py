@@ -9,8 +9,6 @@ import anyio
 import httpx
 from datetime import datetime, timedelta, date
 
-import person_detect
-import face_recognition_service
 import hbie_service
 from typing import Optional, List
 from contextlib import asynccontextmanager
@@ -68,12 +66,6 @@ def _env_bool(name: str, default: bool = True) -> bool:
     return raw not in ("0", "false", "no", "off")
 
 
-# Co tat tam 3 thiet bi ngoai vi. Dat trong Vali_hientruong/.env de bat/tat khong phai
-# sua code. LUU Y: tat may KHONG anh huong cac truong nhap tay — so CCCD,
-# height_cm, weight_kg van nhap binh thuong, chi mat phan tu dong dien.
-FEATURE_CCCD_READER = _env_bool("FEATURE_CCCD_READER")
-FEATURE_WEIGHT_SCALE = _env_bool("FEATURE_WEIGHT_SCALE")
-FEATURE_HEIGHT_YOLO = _env_bool("FEATURE_HEIGHT_YOLO")
 FEATURE_USB_DONGLE = _env_bool("FEATURE_USB_DONGLE", default=False)
 
 # Doc qua _env_str_from_dotenv (khong phai os.getenv thuong): backend co the
@@ -108,23 +100,6 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
-HEIGHT_IMAGE_DEFAULT = _env_float("height_image", 100)
-HEIGHT_IMAGE_MAX = 1000.0
-_height_image_cache: float = HEIGHT_IMAGE_DEFAULT
-
-HEIGHT_OFFSET_DEFAULT = _env_float("height_offset", 103)
-HEIGHT_OFFSET_MAX = 1000.0
-_height_offset_cache: float = HEIGHT_OFFSET_DEFAULT
-
-
-def get_height_image() -> float:
-    """Giá trị height_image hiện hành (cache in-memory, đồng bộ với DB)."""
-    return _height_image_cache
-
-
-def get_height_offset() -> float:
-    """Giá trị height_offset hiện hành (cache in-memory, đồng bộ với DB)."""
-    return _height_offset_cache
 
 
 # Ngưỡng chất lượng vân tay tối thiểu cho TỪNG ngón (0-100). Khác
@@ -210,7 +185,6 @@ async def lifespan(app: FastAPI):
         await _ensure_admin()
         await _ensure_default_cells()
         await _ensure_indexes()
-        await _load_measurement_config()
         await _load_fp_config()
         await _load_hbie_config()
     except Exception:
@@ -219,14 +193,6 @@ async def lifespan(app: FastAPI):
     # thể chưa kịp bật, và nó tự respawn nên phải đồng bộ lại mỗi lần backend
     # start. Không await để không block app ready.
     asyncio.create_task(_push_fp_quality_safe())
-    # Load YOLO person-detect model o background (khong block app ready).
-    # FEATURE_HEIGHT_YOLO=0 -> khong load, tiet kiem RAM/CPU luc khoi dong.
-    if FEATURE_HEIGHT_YOLO:
-        threading.Thread(target=person_detect.load_blocking, daemon=True, name="yolo-load").start()
-    else:
-        print("[feature] FEATURE_HEIGHT_YOLO=0 -> bo qua load model YOLO.")
-    # Load InsightFace (buffalo_sc) o background cho nhan dien khuon mat
-    threading.Thread(target=face_recognition_service.load_blocking, daemon=True, name="face-load").start()
     yield
     client.close()
 
@@ -249,31 +215,7 @@ async def _ensure_admin():
             )
 
 
-async def _load_measurement_config():
-    """Đọc height_image + height_offset từ db.settings; seed từ .env nếu chưa có. Cập nhật cache in-memory."""
-    global _height_image_cache, _height_offset_cache
-    doc = await db.settings.find_one({"_id": "measurement"})
-    if doc is None:
-        _height_image_cache = HEIGHT_IMAGE_DEFAULT
-        _height_offset_cache = HEIGHT_OFFSET_DEFAULT
-        await db.settings.insert_one({
-            "_id": "measurement",
-            "height_image": HEIGHT_IMAGE_DEFAULT,
-            "height_offset": HEIGHT_OFFSET_DEFAULT,
-        })
-    else:
-        try:
-            val = float(doc.get("height_image"))
-            if val > 0:
-                _height_image_cache = val
-        except (TypeError, ValueError):
-            pass
-        try:
-            val = float(doc.get("height_offset"))
-            if val > 0:
-                _height_offset_cache = val
-        except (TypeError, ValueError):
-            pass
+
 
 
 def _sanitize_fp_map(raw) -> dict:
@@ -1115,9 +1057,6 @@ def _changed_roll_fingers(old: Optional[dict], new: Optional[dict]) -> list:
     return [c for c, k in FP_KEY_BY_CODE.items() if (o.get(k) or "") != (n.get(k) or "")]
 
 
-# ---------- Face recognition (nhận diện khuôn mặt bằng InsightFace buffalo_sc) ----------
-FACE_MATCH_THRESHOLD = float(os.getenv("FACE_MATCH_THRESHOLD", "0.4"))
-
 
 class MatchFingerprintReq(BaseModel):
     # FE gom du N ngon (theo FP_FINGER_CODES) roi gui len. Backend chi dung
@@ -1262,29 +1201,6 @@ async def match_fingerprint_single(body: MatchFingerprintSingleReq, user: dict =
         ],
         "score": top[0]["score"] / 100.0 if top else 0.0,
     }
-
-
-async def _compute_face_embedding(portrait_url: str) -> list[float] | None:
-    """Tính embedding 512d từ ảnh portrait_front (URL local /uploads/...).
-
-    Trả None nếu model chưa ready / không detect mặt / URL ngoài. Không raise.
-    """
-    if not portrait_url or not face_recognition_service.is_ready():
-        return None
-    path = _resolve_upload_path(portrait_url)
-    if not path:
-        return None
-    try:
-        with open(path, "rb") as f:
-            img_bytes = f.read()
-        emb, _n, _m = await anyio.to_thread.run_sync(
-            face_recognition_service.get_embedding, img_bytes
-        )
-        if emb is None:
-            return None
-        return [float(x) for x in emb.tolist()]
-    except Exception:  # noqa: BLE001
-        return None
 
 
 @app.post("/api/detainees")
@@ -1940,25 +1856,6 @@ async def upload_photo(
     if len(data) > 5 * 1024 * 1024:
         raise HTTPException(400, "Ảnh vượt quá 5MB")
 
-    boxed = False
-    n_persons = None
-    head_ratio = None
-    # Ảnh có vạch đỏ CHỈ để frontend xem tạm ngay sau khi chụp (data URI, không ghi đĩa).
-    # File lưu xuống đĩa + URL vào DB luôn là ẢNH GỐC SẠCH, không có vạch.
-    preview_b64 = None
-    if type == "portrait" and FEATURE_HEIGHT_YOLO and person_detect.is_ready():
-        try:
-            boxed_bytes, n_persons, head_ratio = await anyio.to_thread.run_sync(
-                person_detect.draw_person_boxes, data
-            )
-            preview_b64 = base64.b64encode(boxed_bytes).decode("ascii")
-            boxed = True
-        except Exception:  # noqa: BLE001 — không hỏng flow chụp
-            boxed = False
-            n_persons = None
-            head_ratio = None
-            preview_b64 = None
-
     name = f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{ObjectId()}{ext}"
     path = os.path.join(UPLOAD_DIR, name)
     with open(path, "wb") as f:
@@ -1966,159 +1863,10 @@ async def upload_photo(
     return {
         "url": f"/uploads/{name}",
         "size": len(data),
-        "boxed": boxed,
-        "n_persons": n_persons,
-        "head_ratio": head_ratio,
-        "preview_url": f"data:image/jpeg;base64,{preview_b64}" if preview_b64 else None,
     }
 
 
-@app.get("/api/detect/health")
-async def detect_health(user: dict = Depends(get_current_user)):
-    if not FEATURE_HEIGHT_YOLO:
-        return {"ready": False, "enabled": False}
-    return person_detect.get_status()
 
-
-@app.get("/api/face/health")
-async def face_health(user: dict = Depends(get_current_user)):
-    return face_recognition_service.get_status()
-
-
-@app.post("/api/face/recognize")
-async def face_recognize(
-    request: Request,
-    file: UploadFile | None = File(None),
-    user: dict = Depends(get_current_user),
-):
-    """Nhận diện khuôn mặt + match toàn hệ thống.
-
-    Nhận multipart 'file' HOẶC JSON body {url: '/uploads/...'}.
-    Trả {ready, method, n_faces, matches:[{detainee(gọn), score}]} —
-    cosine >= FACE_MATCH_THRESHOLD, sort desc, limit 5.
-    """
-    # Lấy bytes ảnh: từ file upload hoặc từ URL local
-    img_bytes = None
-    if file is not None:
-        img_bytes = await file.read()
-    else:
-        try:
-            body = await request.json()
-        except Exception:
-            body = {}
-        url = (body or {}).get("url", "")
-        path = _resolve_upload_path(url)
-        if not path:
-            raise HTTPException(400, "Cần gửi file ảnh hoặc url '/uploads/...'.")
-        with open(path, "rb") as f:
-            img_bytes = f.read()
-
-    if not img_bytes:
-        raise HTTPException(400, "Ảnh trống.")
-
-    if not face_recognition_service.is_ready():
-        return {"ready": False, "method": "none", "n_faces": 0, "matches": []}
-
-    embedding, n_faces, method = await anyio.to_thread.run_sync(
-        face_recognition_service.get_embedding, img_bytes
-    )
-    if embedding is None:
-        return {"ready": True, "method": method, "n_faces": 0, "matches": []}
-
-    # Scan toàn hệ thống các doc có face_embedding
-    candidates = []
-    cursor = db.detainees.find(
-        {"photos.face_embedding": {"$exists": True, "$ne": []}},
-        {"_id": 1, "photos.face_embedding": 1},
-    )
-    async for d in cursor:
-        fe = (d.get("photos") or {}).get("face_embedding")
-        if fe:
-            candidates.append({"_id": d["_id"], "face_embedding": fe})
-
-    hits = await anyio.to_thread.run_sync(
-        lambda: face_recognition_service.match(embedding, candidates, FACE_MATCH_THRESHOLD)
-    )
-    hits = hits[:5]
-    # Lấy doc gọn cho top hits
-    matches = []
-    if hits:
-        ids = [_oid(h["_id"]) for h in hits]
-        score_by_id = {str(_oid(h["_id"])): h["score"] for h in hits}
-        async for d in db.detainees.find({"_id": {"$in": ids}}, _MATCH_PROJECTION):
-            det_id = str(d["_id"])
-            matches.append({
-                "detainee": _s(d),
-                "score": score_by_id.get(det_id, 0.0),
-            })
-    # Giữ thứ tự sort desc
-    matches.sort(key=lambda m: -m["score"])
-    return {"ready": True, "method": method, "n_faces": n_faces, "matches": matches}
-
-
-@app.post("/api/face/backfill")
-async def face_backfill(user: dict = Depends(get_current_user)):
-    """Tính lại face_embedding cho mọi detainee có portrait_front + chưa có embedding.
-
-    Admin only. Chạy batch, không block. Trả {updated, skipped, failed}.
-    """
-    if user.get("role") != "admin":
-        raise HTTPException(403, "Chỉ admin mới được backfill.")
-    updated = skipped = failed = 0
-    cursor = db.detainees.find(
-        {"photos.portrait_front": {"$exists": True, "$ne": ""}},
-        {"_id": 1, "photos.portrait_front": 1, "photos.face_embedding": 1},
-    )
-    async for d in cursor:
-        photos = d.get("photos") or {}
-        if photos.get("face_embedding"):
-            skipped += 1
-            continue
-        url = photos.get("portrait_front") or ""
-        fe = await _compute_face_embedding(url)
-        if fe:
-            await db.detainees.update_one({"_id": d["_id"]}, {"$set": {"photos.face_embedding": fe}})
-            updated += 1
-        else:
-            failed += 1
-    return {"updated": updated, "skipped": skipped, "failed": failed}
-
-
-@app.get("/api/config/features")
-async def features_config(user: dict = Depends(get_current_user)):
-    """Co bat/tat 3 thiet bi ngoai vi cho frontend an/hien UI tuong ung.
-    Moi user dang nhap deu doc duoc (khong chi admin) vi UI can no de render."""
-    return {
-        "cccd_reader": FEATURE_CCCD_READER,
-        "weight_scale": FEATURE_WEIGHT_SCALE,
-        "height_yolo": FEATURE_HEIGHT_YOLO,
-    }
-
-
-@app.get("/api/config/measurement")
-async def measurement_config(user: dict = Depends(get_current_user)):
-    return {"height_image": get_height_image(), "height_offset": get_height_offset()}
-
-
-class MeasurementConfigIn(BaseModel):
-    height_image: float = Field(..., gt=0, le=HEIGHT_IMAGE_MAX)
-    height_offset: float = Field(..., gt=0, le=HEIGHT_OFFSET_MAX)
-
-
-@app.put("/api/config/measurement")
-async def update_measurement_config(body: MeasurementConfigIn, request: Request, admin: dict = Depends(require_admin)):
-    global _height_image_cache, _height_offset_cache
-    value = float(body.height_image)
-    offset = float(body.height_offset)
-    await db.settings.update_one(
-        {"_id": "measurement"},
-        {"$set": {"height_image": value, "height_offset": offset}},
-        upsert=True,
-    )
-    _height_image_cache = value
-    _height_offset_cache = offset
-    await _log(request, admin, "update", "setting", "measurement", {"height_image": value, "height_offset": offset})
-    return {"height_image": value, "height_offset": offset}
 
 
 @app.get("/api/config/fingerprint")
@@ -2259,186 +2007,7 @@ async def update_hbie_config(body: HbieConfigIn, request: Request, admin: dict =
     }
 
 
-# ==================== CCCD READER (watch folder data_cccd) ====================
-from cccd_watcher import (
-    cccd_health as _cccd_health,
-    cccd_start_session as _cccd_start_session,
-    cccd_wait_session as _cccd_wait_session,
-    cccd_read_again as _cccd_read_again,
-    cccd_end_session as _cccd_end_session,
-    cccd_session_count as _cccd_session_count,
-    cccd_inject as _cccd_inject,
-)
 
-
-def _require_cccd_reader() -> None:
-    """Chan cac route can thiet bi doc CCCD khi FEATURE_CCCD_READER=0.
-
-    LUU Y: chi chan phan DOC BANG MAY. Cac truong CCCD (so CCCD, ho ten, ngay
-    sinh, que quan, dia chi, dan toc, ton giao) van nhap tay va luu binh thuong
-    qua POST/PUT /api/detainees.
-    """
-    if not FEATURE_CCCD_READER:
-        raise HTTPException(503, "Máy đọc CCCD đang tắt. Vui lòng nhập tay các trường CCCD.")
-
-
-@app.get("/api/cccd/health")
-async def cccd_health(user: dict = Depends(get_current_user)):
-    if not FEATURE_CCCD_READER:
-        return {"ok": False, "disabled": True}
-    return _cccd_health()
-
-
-@app.post("/api/cccd/session/start")
-async def cccd_session_start(user: dict = Depends(get_current_user)):
-    _require_cccd_reader()
-    sid = _cccd_start_session()
-    return {"session_id": sid}
-
-
-@app.get("/api/cccd/session/{sid}/wait")
-async def cccd_session_wait(sid: str, timeout: int = Query(25, ge=1, le=60), user: dict = Depends(get_current_user)):
-    _require_cccd_reader()
-    result = await _cccd_wait_session(sid, timeout)
-    if result is None:
-        raise HTTPException(404, "Phiên không tồn tại hoặc đã hết hạn.")
-    if result.get("status") == "timeout":
-        return Response(status_code=204)
-    return result
-
-
-@app.post("/api/cccd/session/{sid}/read_again")
-async def cccd_session_read_again(sid: str, user: dict = Depends(get_current_user)):
-    _require_cccd_reader()
-    ok = _cccd_read_again(sid)
-    if not ok:
-        raise HTTPException(404, "Phiên không tồn tại.")
-    return {"ok": True}
-
-
-@app.delete("/api/cccd/session/{sid}")
-async def cccd_session_delete(sid: str, user: dict = Depends(get_current_user)):
-    _cccd_end_session(sid)
-    return {"ok": True}
-
-
-# ---------- CCCD PUSH (máy ngoài bắn dữ liệu quét CCCD lên) ----------
-CCCD_API_KEY = os.getenv("CCCD_API_KEY", "")
-CCCD_UPLOAD_DIR = os.path.join(UPLOAD_DIR, "cccd_push")
-os.makedirs(CCCD_UPLOAD_DIR, exist_ok=True)
-
-
-def _require_cccd_key(request: Request) -> None:
-    if CCCD_API_KEY and request.headers.get("X-CCCD-Key", "") != CCCD_API_KEY:
-        raise HTTPException(401, "Sai X-CCCD-Key")
-
-
-def _norm_sex_vi(gender: Optional[str]) -> str:
-    if not gender:
-        return ""
-    g = gender.strip().lower()
-    if g in ("male", "nam", "m"):
-        return "Nam"
-    if g in ("female", "nữ", "nu", "f"):
-        return "Nữ"
-    return gender.strip()
-
-
-def _safe_name_segment(s: str) -> str:
-    s = (s or "").strip() or "unknown"
-    return re.sub(r"[^\w\-. ]+", "_", s, flags=re.UNICODE)[:80] or "unknown"
-
-
-class CCCDPushBody(BaseModel):
-    cccd_number: str = Field(..., pattern=r"^\d{12}$")
-    full_name: str = Field(..., min_length=1, max_length=100)
-    dob: Optional[str] = None
-    gender: Optional[str] = None
-    nationality: Optional[str] = None
-    hometown: Optional[str] = None
-    address: Optional[str] = None
-    issued_date: Optional[str] = None
-    expiry_date: Optional[str] = None
-    issued_place: Optional[str] = None            # cơ quan cấp (nhập tay / OCR)
-    cmnd_old: Optional[str] = Field(None, max_length=20)
-    ethnicity: Optional[str] = None
-    religion: Optional[str] = None
-    personal_identification: Optional[str] = None  # đặc điểm nhận dạng
-    mrz: Optional[str] = None                     # MRZ 2-3 dòng (text, máy ngoài decode sẵn)
-    face_photo: Optional[str] = Field(None, max_length=500)
-    source: Optional[str] = Field(None, max_length=64)
-
-
-def _gender_to_en(gender: Optional[str]) -> Optional[str]:
-    if not gender:
-        return None
-    g = gender.strip().lower()
-    if g in ("male", "nam", "m"):
-        return "male"
-    if g in ("female", "nữ", "nu", "f"):
-        return "female"
-    return None
-
-
-@app.post("/api/cccd/push")
-async def cccd_push(body: CCCDPushBody, request: Request):
-    """Máy ngoài bắn dữ liệu CCCD vừa quét lên. Backend đẩy thẳng dữ liệu
-    vào hàng đợi của mọi session đang long-poll /api/cccd/session/{sid}/wait
-    — không phụ thuộc file watcher, không ghi ra data_cccd/."""
-    _require_cccd_reader()
-    _require_cccd_key(request)
-
-    now = datetime.utcnow()
-    pid = body.personal_identification or ""
-    data = {
-        "cccd_number": body.cccd_number,
-        "full_name": body.full_name,
-        "dob": body.dob or "",
-        "gender": _gender_to_en(body.gender),
-        "sex_vi": _norm_sex_vi(body.gender),
-        "nationality": body.nationality or "",
-        "hometown": body.hometown or "",
-        "address": body.address or "",
-        "issued_date": body.issued_date or "",
-        "expiry_date": body.expiry_date or "",
-        "issued_place": "CỤC CẢNH SÁT QLHC VỀ TTXH",            # cơ quan cấp — hardcode cứng, bỏ qua body
-        "cmnd_old": body.cmnd_old or "",
-        "personal_identification": pid,
-        "distinguishing_features": pid,                          # song song — FE dùng key này
-        "mrz": body.mrz or "",
-        "ethnicity": body.ethnicity or "",
-        "religion": body.religion or "",
-        "facePhoto": body.face_photo or "",
-        "_scan_folder": f"push_{now.strftime('%d.%m.%Y.%H.%M.%S')}",
-        "_source": body.source or "",
-    }
-
-    delivered = _cccd_inject(data)
-    return {
-        "ok": True,
-        "cccd_number": body.cccd_number,
-        "delivered": delivered,
-        "ts": now.isoformat(),
-    }
-
-
-@app.post("/api/cccd/upload_image")
-async def cccd_upload_image(request: Request, file: UploadFile = File(...)):
-    """Máy ngoài upload ảnh CCCD/khuôn mặt trước khi gọi /api/cccd/push.
-    Trả URL để đưa vào field face_photo của POST /api/cccd/push."""
-    _require_cccd_reader()
-    _require_cccd_key(request)
-    ext = os.path.splitext(file.filename or "")[1].lower()
-    if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
-        raise HTTPException(400, "Chỉ hỗ trợ ảnh jpg/png/webp")
-    data = await file.read()
-    if len(data) > 5 * 1024 * 1024:
-        raise HTTPException(400, "Ảnh vượt quá 5MB")
-    name = f"cccd_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{ObjectId()}{ext}"
-    path = os.path.join(CCCD_UPLOAD_DIR, name)
-    with open(path, "wb") as f:
-        f.write(data)
-    return {"url": f"/uploads/cccd_push/{name}", "size": len(data)}
 
 
 # ==================== DẤU VẾT HIỆN TRƯỜNG (ảnh vụ án) ====================
@@ -3489,58 +3058,7 @@ async def preview_scene_report_data_endpoint(
     )
 
 
-# ==================== WEIGHT SCALE (push từ máy cân ngoài + WS broadcast) ====================
-from weight_hub import hub as _weight_hub
 
-WEIGHT_API_KEY = os.getenv("WEIGHT_API_KEY", "")
-
-
-class WeightPushBody(BaseModel):
-    weight_kg: float = Field(..., ge=0, le=500)
-    source: Optional[str] = Field(None, max_length=64)
-
-
-@app.post("/api/weight/push")
-async def weight_push(body: WeightPushBody, request: Request):
-    if not FEATURE_WEIGHT_SCALE:
-        raise HTTPException(503, "Cân điện tử đang tắt. Vui lòng nhập cân nặng bằng tay.")
-    if WEIGHT_API_KEY:
-        if request.headers.get("X-Weight-Key", "") != WEIGHT_API_KEY:
-            raise HTTPException(401, "Sai X-Weight-Key")
-    payload = {
-        "weight_kg": round(body.weight_kg, 1),
-        "source": body.source or "",
-        "ts": datetime.utcnow().isoformat(),
-    }
-    delivered = await _weight_hub.broadcast(payload)
-    return {"ok": True, "delivered": delivered, **payload}
-
-
-@app.get("/api/weight/last")
-async def weight_last(user: dict = Depends(get_current_user)):
-    if not FEATURE_WEIGHT_SCALE:
-        return {"weight_kg": None, "disabled": True}
-    return _weight_hub.last_value or {"weight_kg": None}
-
-
-@app.websocket("/api/weight/ws")
-async def weight_ws(ws: WebSocket):
-    # Frontend khong mo WS nay khi co tat, nhung van phai chan phia server cho
-    # client cu (bundle da cache) — dong ngay, khong dang ky vao hub.
-    if not FEATURE_WEIGHT_SCALE:
-        await ws.accept()
-        await ws.close()
-        return
-    await _weight_hub.connect(ws)
-    try:
-        while True:
-            await ws.receive_text()
-    except WebSocketDisconnect:
-        pass
-    except Exception:
-        pass
-    finally:
-        await _weight_hub.disconnect(ws)
 
 
 # ==================== IMPORT / EXPORT ====================

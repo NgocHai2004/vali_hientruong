@@ -6,14 +6,13 @@ import {
   Sun, Users
 } from "lucide-react";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { api, cccdApi, exportToUsb, fpApi } from "./api";
+import { api, exportToUsb, fpApi } from "./api";
 import CaseDetailPage from "./CaseDetailPage";
 import CasesPage from "./CasesPage";
 import Button from "./components/Button";
 import DataCapturePage from "./DataCapturePage";
 import DetaineeForm from "./DetaineeForm";
 import { LanguageSwitch, useI18n } from "./i18n";
-import { useFeatures } from "./lib/features";
 import { notify } from "./notifications";
 import "./sceneMatch.css";
 import SceneMatchPage from "./SceneMatchPage";
@@ -554,10 +553,7 @@ function useNotifState() {
 }
 
 function useDeviceConnections() {
-  const [status, setStatus] = useState({ camera: false, cccd: false, fp: false, scale: false });
-  const features = useFeatures();
-  const cccdOn = features.cccd_reader;
-  const scaleOn = features.weight_scale;
+  const [status, setStatus] = useState({ camera: false, fp: false });
 
   useEffect(() => {
     let cancelled = false;
@@ -567,15 +563,6 @@ function useDeviceConnections() {
         if (!navigator.mediaDevices?.enumerateDevices) return false;
         const list = await navigator.mediaDevices.enumerateDevices();
         return list.some((d) => d.kind === "videoinput");
-      } catch {
-        return false;
-      }
-    };
-
-    const checkCccd = async () => {
-      try {
-        const r = await cccdApi.health();
-        return Boolean(r && (r.ok === true || r.status === "ok" || r.ready === true));
       } catch {
         return false;
       }
@@ -591,73 +578,22 @@ function useDeviceConnections() {
     };
 
     const runAll = async () => {
-      // Co CCCD tat -> khong poll /api/cccd/health (chip da an, khoi goi vo ich).
-      const [camera, cccd, fp] = await Promise.all([
+      const [camera, fp] = await Promise.all([
         checkCamera(),
-        cccdOn ? checkCccd() : Promise.resolve(false),
         checkFp(),
       ]);
       if (cancelled) return;
-      setStatus((prev) => ({ ...prev, camera, cccd, fp }));
+      setStatus({ camera, fp });
     };
 
     runAll();
     const timer = setInterval(runAll, 5000);
 
-    const proto = location.protocol === "https:" ? "wss:" : "ws:";
-    let host;
-    if (location.port === "5174") {
-      host = `${location.hostname}:8001`;
-    } else if (window.appcccd && window.appcccd.getProxyPort && window.appcccd.getProxyPort()) {
-      host = `${window.appcccd.proxyHost}:${window.appcccd.getProxyPort()}`;
-    } else {
-      host = location.host;
-    }
-    const wsUrl = `${proto}//${host}/api/weight/ws`;
-    let ws = null;
-    let closed = false;
-    let retry = 0;
-    let retryTimer = null;
-    // Co can tat -> khong mo WS, khong retry. Chip "scale" da an nen khong can
-    // trang thai; server cung dong ngay neu co client cu goi vao.
-
-    const openWs = () => {
-      try {
-        ws = new WebSocket(wsUrl);
-      } catch {
-        scheduleReconnect();
-        return;
-      }
-      ws.onopen = () => {
-        retry = 0;
-        if (!cancelled) setStatus((prev) => ({ ...prev, scale: true }));
-      };
-      ws.onclose = () => {
-        if (!cancelled) setStatus((prev) => ({ ...prev, scale: false }));
-        if (closed) return;
-        scheduleReconnect();
-      };
-      ws.onerror = () => { /* handled in onclose */ };
-    };
-
-    const scheduleReconnect = () => {
-      retry = Math.min(retry + 1, 4);
-      const delay = Math.min(1000 * 2 ** (retry - 1), 10000);
-      retryTimer = setTimeout(openWs, delay);
-    };
-
-    if (scaleOn) openWs();
-
     return () => {
       cancelled = true;
       clearInterval(timer);
-      closed = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      try { ws && ws.close(); } catch { /* noop */ }
     };
-    // Phu thuoc vao 2 co: co ve muon (sau khi fetch /api/config/features xong)
-    // nen phai chay lai effect de dong WS / dung poll cho dung.
-  }, [cccdOn, scaleOn]);
+  }, []);
 
   return status;
 }

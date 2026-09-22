@@ -112,19 +112,10 @@ $lnk.Description      = 'App_CCCD kiosk auto-start (Electron + services)'
 $lnk.Save()
 Write-Host "  [OK] Da tao shortcut: $lnkPath" -ForegroundColor Green
 
-# ---- 4. Kiem tra weight scheduled task ----
-$task = Get-ScheduledTask -TaskName 'JPDScaleGateway' -ErrorAction SilentlyContinue
-if ($task) {
-    Write-Host "  [OK] Weight service (JPDScaleGateway) da co - tu chay khi dang nhap." -ForegroundColor Green
-} else {
-    Write-Host "  [!] Chua thay weight service (JPDScaleGateway). Chay: .\weight\install_service.ps1" -ForegroundColor Yellow
-}
-
 Write-Host ""
 Write-Host "=== HOAN TAT ===" -ForegroundColor Cyan
 Write-Host "  - Bat may -> tu dong dang nhap $Domain\$UserName (khong can mat khau)"
-Write-Host "  - Tu chay: MongoDB + Backend + USB + Fingerprint + CCCD + Electron app"
-Write-Host "  - Weight (can) tu chay qua Scheduled Task"
+Write-Host "  - Tu chay: MongoDB + Backend + USB + Fingerprint + Electron app"
 Write-Host ""
 Write-Host "Khoi dong lai may de kiem tra." -ForegroundColor Yellow
 Write-Host "Go bo: powershell -ExecutionPolicy Bypass -File setup-kiosk.ps1 -Uninstall" -ForegroundColor DarkGray

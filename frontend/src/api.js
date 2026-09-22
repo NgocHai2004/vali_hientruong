@@ -184,11 +184,6 @@ export const api = {
   updateMe: (body) => request("/api/auth/me", { method: "PATCH", body: JSON.stringify(body) }),
   verifyDongle: () => request("/api/auth/dongle-verify", { skipAuthExpire: true }),
   health: () => fetch("/api/health").then((r) => r.json()).catch(() => ({ ok: false })),
-  featureConfig: () => request("/api/config/features"),
-  // measurementConfig chi con DataCapturePage doc (tinh chieu cao tu dong khi
-  // FEATURE_HEIGHT_YOLO bat). O chinh sua trong Cai dat da bo: backend van giu
-  // PUT /api/config/measurement lam duong hieu chinh khi can bat lai YOLO.
-  measurementConfig: () => request("/api/config/measurement"),
   fingerprintConfig: () => request("/api/config/fingerprint"),
   updateFingerprintConfig: (body) => request("/api/config/fingerprint", { method: "PUT", body: JSON.stringify(body) }),
   // Nguong doi sach dau vet hien truong (HBIE). GET moi user doc duoc de ve thang
@@ -242,19 +237,6 @@ export const api = {
     const qs = type ? `?type=${encodeURIComponent(type)}` : "";
     return request(`/api/upload/photo${qs}`, { method: "POST", body: fd });
   },
-
-  // Nhận diện khuôn mặt + match toàn hệ thống. Truyền URL '/uploads/...' hoặc File.
-  // Trả {ready, method, n_faces, matches:[{detainee, score}]}.
-  faceRecognize: async (fileOrUrl) => {
-    if (typeof fileOrUrl === "string") {
-      return request("/api/face/recognize", { method: "POST", body: JSON.stringify({ url: fileOrUrl }) });
-    }
-    const fd = new FormData();
-    fd.append("file", fileOrUrl);
-    return request("/api/face/recognize", { method: "POST", body: fd });
-  },
-
-  faceHealth: () => request("/api/face/health"),
 
 
   importXlsx: async (formData) => request("/api/detainees/import/xlsx", { method: "POST", body: formData }),
@@ -426,110 +408,6 @@ export const fpApi = {
   stopCapture: () => fpRequest("/fp/api/capture/stop", { method: "POST" }),
 };
 
-// ============ CCCD reader API (watch folder backend/data_cccd via /api/cccd/*) ============
-async function cccdRequest(path, opts = {}, signal) {
-  const headers = { ...(opts.headers || {}) };
-  const token = auth.getToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  if (opts.body && !(opts.body instanceof FormData) && !headers["Content-Type"]) {
-    headers["Content-Type"] = "application/json";
-  }
-  let res;
-  try {
-    res = await fetch(path, { ...opts, headers, signal });
-  } catch (netErr) {
-    if (netErr.name === "AbortError") throw netErr;
-    throw new Error(apiT("api.error.cccd_network", { message: netErr.message }));
-  }
-  if (res.status === 204) return { status: "timeout" };
-  if (res.status === 401) {
-    // DELETE /api/cccd/session/{sid} = cleanup (cancel) — KHONG logout khi 401.
-    // 401 o day thuong la hau qua cua logout truoc do (token da clear), khong phai nguyen nhan.
-    if (opts.method === "DELETE" && path.startsWith("/api/cccd/session/")) {
-      throw new Error("cccd session cleanup failed (401)");
-    }
-    auth.clear();
-    if (onAuthExpired) onAuthExpired();
-    throw new Error(apiT("api.error.auth_expired"));
-  }
-  const ct = res.headers.get("content-type") || "";
-  const data = ct.includes("application/json") ? await res.json() : await res.text();
-  if (!res.ok) {
-    const msg = (data && data.detail) || (typeof data === "string" ? data : apiT("api.error.cccd_server"));
-    throw new Error(msg);
-  }
-  return data;
-}
-
-export const cccdApi = {
-  health: () => cccdRequest("/api/cccd/health"),
-  startSession: () => cccdRequest("/api/cccd/session/start", { method: "POST" }),
-  wait: (sid, signal, timeout = 25) =>
-    cccdRequest(`/api/cccd/session/${sid}/wait?timeout=${timeout}`, {}, signal),
-  readAgain: (sid) =>
-    cccdRequest(`/api/cccd/session/${sid}/read_again`, { method: "POST" }),
-  cancel: (sid) =>
-    cccdRequest(`/api/cccd/session/${sid}`, { method: "DELETE" }),
-};
-
-// ============ Weight scale WebSocket (máy cân bên ngoài POST /api/weight/push) ============
-export const weightApi = {
-  // Mở WebSocket lắng nghe cân nặng. onValue({weight_kg, source, ts}) mỗi khi máy cân bắn về.
-  // Trả về hàm close() để đóng kết nối khi component unmount.
-  connect(onValue) {
-    const proto = location.protocol === "https:" ? "wss:" : "ws:";
-    // Dev Vite (:5174): nối thẳng vào backend :8001, tránh phụ thuộc `ws: true` trong vite.config.js.
-    // Prod / khi FE serve cùng host với BE: giữ nguyên location.host.
-    // Electron kiosk: ws đi qua proxy nội bộ (127.0.0.1:<proxyPort>) — preload inject.
-    let host;
-    if (location.port === "5174") {
-      host = `${location.hostname}:8001`;
-    } else if (window.appcccd && window.appcccd.getProxyPort && window.appcccd.getProxyPort()) {
-      host = `${window.appcccd.proxyHost}:${window.appcccd.getProxyPort()}`;
-    } else {
-      host = location.host;
-    }
-    const url = `${proto}//${host}/api/weight/ws`;
-    let ws = null;
-    let closed = false;
-    let retry = 0;
-    let retryTimer = null;
-
-    const open = () => {
-      try {
-        ws = new WebSocket(url);
-      } catch {
-        scheduleReconnect();
-        return;
-      }
-      ws.onopen = () => { retry = 0; };
-      ws.onmessage = (e) => {
-        let payload;
-        try { payload = JSON.parse(e.data); } catch { return; }
-        if (payload && typeof payload.weight_kg === "number") onValue(payload);
-      };
-      ws.onerror = () => { /* để onclose xử lý reconnect */ };
-      ws.onclose = () => {
-        if (closed) return;
-        scheduleReconnect();
-      };
-    };
-
-    const scheduleReconnect = () => {
-      retry = Math.min(retry + 1, 4);
-      const delay = Math.min(1000 * 2 ** (retry - 1), 10000);
-      retryTimer = setTimeout(open, delay);
-    };
-
-    open();
-
-    return () => {
-      closed = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      try { ws && ws.close(); } catch { /* noop */ }
-    };
-  },
-};
 
 // base64 PNG (không kèm data:image/png;base64,) → File
 export async function b64PngToFile(b64, filename) {
