@@ -100,7 +100,6 @@ const NAV_BASE = [
   { key: "scene_traces", labelKey: "nav.scene_traces", icon: <Folder />, dashboardLabel: { vi: "Vụ án", en: "Cases" } },
   { key: "detainees", labelKey: "nav.detainees", icon: <FileText />, dashboardLabel: { vi: "Hồ sơ", en: "Profiles" } },
   { key: "detainee_history", labelKey: "nav.detainee_history", icon: <History />, dashboardLabel: { vi: "Lịch sử", en: "History" } },
-  { key: "logs", labelKey: "nav.logs", icon: <ClipboardList />, dashboardLabel: { vi: "Báo cáo", en: "Reports" } },
   { key: "sync", labelKey: "nav.sync", icon: <RefreshCw />, dashboardSecondary: true },
 ];
 const NAV_ADMIN = [
@@ -370,9 +369,9 @@ export default function Dashboard({ username = "admin", role = "user", fullName 
               onEditProfile={editDetainee}
             />
           )}
-          {page === "detainee_history" && <DetaineeHistoryPage onEdit={editDetainee} />}
+          {page === "detainee_history" && <HistoryPage onEdit={editDetainee} initialTab="detainee" />}
           {page === "sync" && <SyncPage />}
-          {page === "logs" && <LogsPage />}
+          {page === "logs" && <HistoryPage onEdit={editDetainee} initialTab="sync" />}
           {page === "users" && isAdmin && <UsersPage currentUser={username} />}
           {page === "settings" && isAdmin && <SettingsPage />}
         </main>
@@ -832,7 +831,7 @@ function DashboardHome({ go, isAdmin = false, fullName = "" }) {
           <PanelHeader
             title={t("dashboard.panel.logs")}
             action={t("dashboard.panel.view_report")}
-            onAction={() => go("logs")}
+            onAction={() => go("detainee_history")}
           />
           <div className="activity-feed">
             {recentActivity.map((a) => (
@@ -2040,326 +2039,54 @@ function formatDateTime(iso) {
 let _lastLocale = "vi";
 function setLastLocale(v) { _lastLocale = v; }
 
-function LogsPage() {
+function HistoryPage({ onEdit, initialTab = "detainee" }) {
   const { t } = useI18n();
-  const [logs, setLogs] = useState([]);
-  const [counts, setCounts] = useState({ create: 0, update: 0, delete: 0, login: 0, import: 0 });
-  const [cells, setCells] = useState([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
-  const [resourceFilter, setResourceFilter] = useState("");
-  const [caseFilter, setCaseFilter] = useState("");
-  const [actorFilter, setActorFilter] = useState("");
-  const [users, setUsers] = useState([]);
-  const [viewing, setViewing] = useState(null);
-  const [editing, setEditing] = useState(null);
-  const [busyRef, setBusyRef] = useState("");
-  const [notice, setNotice] = useState("");
-  const [noticeOk, setNoticeOk] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const params = { action: "sync", resource: "case" };
-      if (dateFrom) params.date_from = dateFrom;
-      if (dateTo) params.date_to = dateTo;
-      if (caseFilter.trim()) params.case_code = caseFilter.trim();
-      if (actorFilter) params.actor = actorFilter;
-      const res = await api.listLogs(params);
-      setLogs(res.items || []);
-      setCounts(res.counts || { sync: 0 });
-      setError("");
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-    api.listCells().then(setCells).catch(() => { });
-    api.listUsers().then(setUsers).catch(() => { });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const labels = {
-    login: t("logs.action.login"),
-    create: t("logs.action.create"),
-    update: t("logs.action.update"),
-    delete: t("logs.action.delete"),
-    import: t("logs.action.import"),
-    sync: t("logs.action.sync"),
-  };
-
-  const resolveDetainee = async (log) => {
-    if (log.ref_id) {
-      try {
-        return await api.getDetainee(log.ref_id);
-      } catch (e) {
-        // fall through to code-based lookup
-      }
-    }
-    if (log.ref) return await api.getDetaineeByPersonalId(log.ref);
-    throw new Error(t("logs.err.no_ref"));
-  };
-
-  const isDetaineeLog = (log) =>
-    log.resource === "detainee" &&
-    (log.ref || log.ref_id) &&
-    log.action !== "delete";
-
-  const isSyncLog = (log) => log.action === "sync";
-  const [syncViewing, setSyncViewing] = useState(null);
-
-  const onView = async (log) => {
-    if (isSyncLog(log)) {
-      setSyncViewing(log);
-      return;
-    }
-    setBusyRef(log.id);
-    setNotice("");
-    try {
-      const d = await resolveDetainee(log);
-      setViewing(d);
-    } catch (e) {
-      setNotice(t("logs.err.open", { message: e.message }));
-      setNoticeOk(false);
-    } finally {
-      setBusyRef("");
-    }
-  };
-
-  const onEdit = async (log) => {
-    setBusyRef(log.id);
-    setNotice("");
-    try {
-      const d = await resolveDetainee(log);
-      setEditing(d);
-    } catch (e) {
-      setNotice(t("logs.err.open", { message: e.message }));
-      setNoticeOk(false);
-    } finally {
-      setBusyRef("");
-    }
-  };
-
-  const onDelete = async (log) => {
-    if (!window.confirm(t("logs.confirm_delete", { ref: log.ref || "" }))) return;
-    setBusyRef(log.id);
-    setNotice("");
-    try {
-      const d = await resolveDetainee(log);
-      await api.deleteDetainee(d.id);
-      notify.add(t("logs.notify.deleted", { code: d.code }));
-      setNotice(t("logs.deleted", { code: d.code }));
-      setNoticeOk(true);
-      load();
-    } catch (e) {
-      setNotice(t("logs.err.delete", { message: e.message }));
-      setNoticeOk(false);
-    } finally {
-      setBusyRef("");
-    }
-  };
-
-  const clearFilters = () => {
-    setDateFrom("");
-    setDateTo("");
-    setCaseFilter("");
-    setActorFilter("");
-  };
+  const [tab, setTab] = useState(initialTab);
 
   return (
     <div className="page report-page">
       <div className="report-fixed">
-        <PageHeader
-          title={t("logs.title_sync")}
-          subtitle={t("logs.subtitle_sync", { n: logs.length })}
-        >
-          <button className="button secondary" onClick={load} disabled={loading}>
-            {Icon.refresh}
-            {loading ? t("common.loading") : t("common.refresh")}
-          </button>
-        </PageHeader>
-
-        <div className="report-stat-grid">
-          <ReportStat tone="orange" icon={Icon.sync} label={t("logs.stat.sync_total")} value={counts.sync || 0} note={t("logs.stat.note.sync")} />
-        </div>
-
-        <form
-          className="report-filter"
-          onSubmit={(e) => { e.preventDefault(); load(); }}
-        >
-          <div className="report-filter-head">
-            <span className="report-filter-title">{t("logs.filter.title")}</span>
-            <span className="report-filter-hint">{t("logs.filter.desc")}</span>
+        <div className="page-header" style={{ alignItems: "center", gap: 16 }}>
+          <div>
+            <h1>{t("history.title")}</h1>
+            <p>{tab === "detainee" ? t("history.subtitle") : t("logs.subtitle_sync")}</p>
           </div>
-          <div className="report-filter-grid">
-            <label className="report-field">
-              <span>{t("common.from")}</span>
-              <input
-                className="control"
-                type="datetime-local"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
-            </label>
-            <label className="report-field">
-              <span>{t("common.to")}</span>
-              <input
-                className="control"
-                type="datetime-local"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
-            </label>
-            <label className="report-field">
-              <span>{t("logs.field.case")}</span>
-              <input
-                className="control"
-                type="text"
-                placeholder={t("logs.field.case_ph")}
-                value={caseFilter}
-                onChange={(e) => setCaseFilter(e.target.value)}
-              />
-            </label>
-            <label className="report-field">
-              <span>{t("logs.field.officer")}</span>
-              <select className="control" value={actorFilter} onChange={(e) => setActorFilter(e.target.value)}>
-                <option value="">{t("logs.field.officer_all")}</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.username}>
-                    {u.full_name ? `${u.full_name} (@${u.username})` : u.username}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="report-filter-actions report-filter-actions-inline">
-              <button type="button" className="button secondary" onClick={clearFilters}>{t("common.clear_filter")}</button>
-              <button type="submit" className="button primary" disabled={loading}>
-                {loading ? t("common.applying") : t("common.apply")}
+          <div className="page-header-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div className="scp-seg" role="tablist" aria-label={t("history.title")}>
+              <button
+                type="button"
+                className={tab === "detainee" ? "active" : ""}
+                onClick={() => setTab("detainee")}
+                role="tab"
+                aria-selected={tab === "detainee"}
+              >
+                {t("history.tab.detainee")}
+              </button>
+              <button
+                type="button"
+                className={tab === "sync" ? "active" : ""}
+                onClick={() => setTab("sync")}
+                role="tab"
+                aria-selected={tab === "sync"}
+              >
+                {t("history.tab.sync")}
               </button>
             </div>
           </div>
-        </form>
-
-        {error && <StateBox type="error">{error}</StateBox>}
-        {notice && <div className={noticeOk ? "success-box" : "error-box"}>{notice}</div>}
-      </div>
-
-      <div className="report-scroll">
-        <div className="table-card">
-          <table>
-            <thead>
-              <tr>
-                <th style={{ width: "18%" }}>{t("logs.col.time")}</th>
-                <th style={{ width: "16%" }}>{t("logs.col.case")}</th>
-                <th style={{ width: "22%" }}>{t("logs.col.officer")}</th>
-                <th style={{ width: "32%" }}>{t("logs.sync.result")}</th>
-                <th style={{ width: "12%" }}>{t("logs.col.actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => {
-                const busy = busyRef === log.id;
-                const officer = log.officer || {};
-                const initials = ((officer.full_name || officer.username || log.actor || "?").trim()[0] || "?").toUpperCase();
-                const d = log.data || {};
-                return (
-                  <tr key={log.id}>
-                    <td>{formatDateTime(log.at)}</td>
-                    <td>
-                      {log.case ? (
-                        <span className="case-code-chip">
-                          <span className={`badge ${log.case.status === "investigating" ? "badge-open" : "badge-closed"}`}>
-                            {log.case.status === "investigating" ? "●" : "✓"}
-                          </span>
-                          <span className="mono">{log.case.code}</span>
-                        </span>
-                      ) : (
-                        <span className="mono">{log.ref || "—"}</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="officer-cell">
-                        {officer.avatar_url ? (
-                          <img className="officer-avatar" src={officer.avatar_url} alt="" />
-                        ) : (
-                          <span className="officer-avatar officer-avatar-fallback">{initials}</span>
-                        )}
-                        <div className="officer-name">
-                          <strong>{officer.full_name || log.actor}</strong>
-                          {officer.full_name ? <small>@{log.actor}</small> : null}
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", fontSize: 12 }}>
-                        <span className="status-badge create">{t("logs.sync.added")}: {d.added || 0}</span>
-                        <span className="status-badge update">{t("logs.sync.updated")}: {d.updated || 0}</span>
-                        <span className="status-badge delete">{t("logs.sync.duplicated")}: {d.duplicated || 0}</span>
-                        {Number(d.failed || 0) > 0 && (
-                          <span className="status-badge delete">{t("logs.sync.failed")}: {d.failed}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="row-actions">
-                        <button disabled={busy} onClick={() => onView(log)}>{t("common.view")}</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {!logs.length && (
-                <tr><td colSpan={5}><div className="empty">{t("common.empty")}</div></td></tr>
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
 
-      {viewing && <DetailModal detainee={viewing} onClose={() => setViewing(null)} />}
-      {syncViewing && <SyncLogDetailModal log={syncViewing} onClose={() => setSyncViewing(null)} />}
-      {editing && (
-        <DetaineeForm
-          initial={editing}
-          cells={cells}
-          onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            setNotice(t("logs.notice.updated"));
-            setNoticeOk(true);
-            load();
-          }}
-        />
+      {tab === "detainee" ? (
+        <DetaineeHistoryView onEdit={onEdit} />
+      ) : (
+        <SyncHistoryView />
       )}
     </div>
   );
 }
 
-function PageHeader({ title, subtitle, children }) {
-  return (
-    <div className="page-header">
-      <div>
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
-      </div>
-      <div className="page-header-actions">{children}</div>
-    </div>
-  );
-}
-
-function StateBox({ type = "", children }) {
-  return <div className={`state-box ${type}`}>{children}</div>;
-}
-
-function DetaineeHistoryPage({ onEdit }) {
-  const { t } = useI18n();
+function DetaineeHistoryView({ onEdit }) {
+  const { t, formatDateTime } = useI18n();
   const [logs, setLogs] = useState([]);
   const [counts, setCounts] = useState({ create: 0, update: 0, delete: 0, import: 0 });
   const [loading, setLoading] = useState(false);
@@ -2469,18 +2196,8 @@ function DetaineeHistoryPage({ onEdit }) {
   const isActable = (log) => (log.ref || log.ref_id) && log.action !== "delete";
 
   return (
-    <div className="page report-page">
-      <div className="report-fixed">
-        <PageHeader
-          title={t("history.title")}
-          subtitle={t("history.subtitle", { n: filtered.length })}
-        >
-          <button className="button secondary" onClick={load} disabled={loading}>
-            {Icon.refresh}
-            {loading ? t("common.loading") : t("common.refresh")}
-          </button>
-        </PageHeader>
-
+    <>
+      <div className="report-fixed" style={{ paddingTop: 0 }}>
         <div className="report-stat-grid">
           <ReportStat tone="blue" icon={Icon.file} label={t("history.action.create")} value={counts.create || 0} note={t("history.stat.note.create")} />
           <ReportStat tone="orange" icon={Icon.sync} label={t("logs.stat.update")} value={counts.update || 0} note={t("logs.stat.note.update")} />
@@ -2628,8 +2345,212 @@ function DetaineeHistoryPage({ onEdit }) {
       </div>
 
       {viewing && <DetailModal detainee={viewing} onClose={() => setViewing(null)} onEdit={onEdit} />}
+    </>
+  );
+}
+
+function SyncHistoryView() {
+  const { t, formatDateTime } = useI18n();
+  const [logs, setLogs] = useState([]);
+  const [counts, setCounts] = useState({ sync: 0 });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [caseFilter, setCaseFilter] = useState("");
+  const [actorFilter, setActorFilter] = useState("");
+  const [users, setUsers] = useState([]);
+  const [syncViewing, setSyncViewing] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const params = { action: "sync", resource: "case" };
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+      if (caseFilter.trim()) params.case_code = caseFilter.trim();
+      if (actorFilter) params.actor = actorFilter;
+      const res = await api.listLogs(params);
+      setLogs(res.items || []);
+      setCounts(res.counts || { sync: 0 });
+      setError("");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    api.listUsers().then(setUsers).catch(() => { });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const clearFilters = () => {
+    setDateFrom("");
+    setDateTo("");
+    setCaseFilter("");
+    setActorFilter("");
+  };
+
+  return (
+    <>
+      <div className="report-fixed" style={{ paddingTop: 0 }}>
+        <div className="report-stat-grid">
+          <ReportStat tone="orange" icon={Icon.sync} label={t("logs.stat.sync_total")} value={counts.sync || 0} note={t("logs.stat.note.sync")} />
+        </div>
+
+        <form
+          className="report-filter"
+          onSubmit={(e) => { e.preventDefault(); load(); }}
+        >
+          <div className="report-filter-head">
+            <span className="report-filter-title">{t("logs.filter.title")}</span>
+            <span className="report-filter-hint">{t("logs.filter.desc")}</span>
+          </div>
+          <div className="report-filter-grid">
+            <label className="report-field">
+              <span>{t("common.from")}</span>
+              <input
+                className="control"
+                type="datetime-local"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </label>
+            <label className="report-field">
+              <span>{t("common.to")}</span>
+              <input
+                className="control"
+                type="datetime-local"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </label>
+            <label className="report-field">
+              <span>{t("logs.field.case")}</span>
+              <input
+                className="control"
+                type="text"
+                placeholder={t("logs.field.case_ph")}
+                value={caseFilter}
+                onChange={(e) => setCaseFilter(e.target.value)}
+              />
+            </label>
+            <label className="report-field">
+              <span>{t("logs.field.officer")}</span>
+              <select className="control" value={actorFilter} onChange={(e) => setActorFilter(e.target.value)}>
+                <option value="">{t("logs.field.officer_all")}</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.username}>
+                    {u.full_name ? `${u.full_name} (@${u.username})` : u.username}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="report-filter-actions report-filter-actions-inline">
+              <button type="button" className="button secondary" onClick={clearFilters}>{t("common.clear_filter")}</button>
+              <button type="submit" className="button primary" disabled={loading}>
+                {loading ? t("common.applying") : t("common.apply")}
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {error && <StateBox type="error">{error}</StateBox>}
+      </div>
+
+      <div className="report-scroll">
+        <div className="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: "18%" }}>{t("logs.col.time")}</th>
+                <th style={{ width: "16%" }}>{t("logs.col.case")}</th>
+                <th style={{ width: "22%" }}>{t("logs.col.officer")}</th>
+                <th style={{ width: "32%" }}>{t("logs.sync.result")}</th>
+                <th style={{ width: "12%" }}>{t("logs.col.actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log) => {
+                const officer = log.officer || {};
+                const initials = ((officer.full_name || officer.username || log.actor || "?").trim()[0] || "?").toUpperCase();
+                const d = log.data || {};
+                return (
+                  <tr key={log.id}>
+                    <td>{formatDateTime(log.at)}</td>
+                    <td>
+                      {log.case ? (
+                        <span className="case-code-chip">
+                          <span className={`badge ${log.case.status === "investigating" ? "badge-open" : "badge-closed"}`}>
+                            {log.case.status === "investigating" ? "●" : "✓"}
+                          </span>
+                          <span className="mono">{log.case.code}</span>
+                        </span>
+                      ) : (
+                        <span className="mono">{log.ref || "—"}</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="officer-cell">
+                        {officer.avatar_url ? (
+                          <img className="officer-avatar" src={officer.avatar_url} alt="" />
+                        ) : (
+                          <span className="officer-avatar officer-avatar-fallback">{initials}</span>
+                        )}
+                        <div className="officer-name">
+                          <strong>{officer.full_name || log.actor}</strong>
+                          {officer.full_name ? <small>@{log.actor}</small> : null}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", fontSize: 12 }}>
+                        <span className="status-badge create">{t("logs.sync.added")}: {d.added || 0}</span>
+                        <span className="status-badge update">{t("logs.sync.updated")}: {d.updated || 0}</span>
+                        <span className="status-badge delete">{t("logs.sync.duplicated")}: {d.duplicated || 0}</span>
+                        {Number(d.failed || 0) > 0 && (
+                          <span className="status-badge delete">{t("logs.sync.failed")}: {d.failed}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="row-actions">
+                        <button onClick={() => setSyncViewing(log)}>{t("common.view")}</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!logs.length && (
+                <tr><td colSpan={5}><div className="empty">{t("common.empty")}</div></td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {syncViewing && <SyncLogDetailModal log={syncViewing} onClose={() => setSyncViewing(null)} />}
+    </>
+  );
+}
+
+function PageHeader({ title, subtitle, children }) {
+  return (
+    <div className="page-header">
+      <div>
+        <h1>{title}</h1>
+        <p>{subtitle}</p>
+      </div>
+      <div className="page-header-actions">{children}</div>
     </div>
   );
+}
+
+function StateBox({ type = "", children }) {
+  return <div className={`state-box ${type}`}>{children}</div>;
 }
 
 function SearchPage() {

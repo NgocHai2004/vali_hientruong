@@ -745,6 +745,8 @@
   "history.search_ph": "Mã hồ sơ, cán bộ, mã vụ án...",
   "history.stat.note.create": "Hồ sơ được tạo",
   "history.subtitle": "Nhật ký các thao tác đăng ký, cập nhật, xoá hồ sơ nghi phạm. Tổng {n} bản ghi.",
+  "history.tab.detainee": "Lịch sử hồ sơ",
+  "history.tab.sync": "Lịch sử đồng bộ",
   "history.title": "Lịch sử",
   "hw.battery": "Nguồn (pin dự phòng)",
   "hw.chip": "Chip AI",

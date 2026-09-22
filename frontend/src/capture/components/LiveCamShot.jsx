@@ -3,7 +3,7 @@ import { api } from "../../api";
 import { useI18n, apiT } from "../../i18n";
 import { pickPreferredCamera } from "../imageUtils";
 
-export function LiveCamShot({ label, shortLabel, value, onCapture, onPortraitRecognize }) {
+export function LiveCamShot({ label, shortLabel, value, onCapture }) {
   const { t } = useI18n();
   const videoRef = useRef(null);
   const frameRef = useRef(null);
@@ -80,7 +80,6 @@ export function LiveCamShot({ label, shortLabel, value, onCapture, onPortraitRec
       const file = new File([blob], `portrait_${Date.now()}.jpg`, { type: "image/jpeg" });
       const res = await api.uploadPhoto(file);
       onCapture(res.url);
-      onPortraitRecognize?.(res.url);
       setPreview(true);
     } catch (e) {
       setErr(e.message);

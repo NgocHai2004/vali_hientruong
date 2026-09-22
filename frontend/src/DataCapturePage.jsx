@@ -1579,7 +1579,6 @@ export default function DataCapturePage({
             <SectionPortraits
               photos={photos}
               setPhoto={setPhoto}
-              onPortraitRecognize={raiseFaceAlerts}
             />
           </div>
         </section>

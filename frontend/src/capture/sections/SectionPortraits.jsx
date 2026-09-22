@@ -5,7 +5,7 @@ import { PORTRAITS } from "../constants";
 // IV. ANH NHAN DANG (3x4) — nghieng phai 2/3, chinh dien, nghieng trai 2/3.
 // Trang thai tung anh chi co Chua chup / Da chup, suy tu photos[key]; khong co
 // buoc danh gia dat/khong dat — can bo thay anh xau thi chup lai.
-export function SectionPortraits({ photos, setPhoto, onPortraitRecognize }) {
+export function SectionPortraits({ photos, setPhoto }) {
   const { t } = useI18n();
 
   return (
@@ -25,7 +25,6 @@ export function SectionPortraits({ photos, setPhoto, onPortraitRecognize }) {
               shortLabel={t(p.labelKey).toUpperCase()}
               value={shot}
               onCapture={(u) => setPhoto(p.key, u)}
-              onPortraitRecognize={onPortraitRecognize}
             />
           </div>
         );

@@ -745,6 +745,8 @@
   "history.search_ph": "Record ID, officer, case code...",
   "history.stat.note.create": "Records created",
   "history.subtitle": "History of registration, update and deletion actions for detainee records. Total {n} entries.",
+  "history.tab.detainee": "Profile history",
+  "history.tab.sync": "Sync history",
   "history.title": "History",
   "hw.battery": "Power (backup battery)",
   "hw.chip": "AI chip",
