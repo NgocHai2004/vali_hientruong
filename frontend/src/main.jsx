@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
+import './dashboard.css'
 import App from './App.jsx'
 import PreviewWindow from './PreviewWindow.jsx'
 import { LanguageProvider } from './i18n'
