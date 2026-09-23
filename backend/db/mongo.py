@@ -116,13 +116,14 @@ def _resolve_upload_path(url: str) -> str | None:
 
 
 def _delete_scene_file(url: Optional[str]) -> None:
-    url = url or ""
-    if not url.startswith("/uploads/scene/"):
+    if not url:
         return
-    try:
-        os.remove(os.path.join(SCENE_UPLOAD_DIR, os.path.basename(url)))
-    except OSError:
-        pass
+    path = _resolve_upload_path(url)
+    if path and os.path.isfile(path):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
 
 
 def _parse_dob(s: Optional[str]) -> Optional[str]:

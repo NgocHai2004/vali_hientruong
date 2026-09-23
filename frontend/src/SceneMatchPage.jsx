@@ -4,11 +4,12 @@ import { api } from "./api";
 import { useI18n } from "./i18n";
 import SceneTraceFull from "./SceneTraceFull";
 import SceneMatchReportModal from "./SceneMatchReportModal";
+import CrossCaseCompareModal from "./components/modals/CrossCaseCompareModal";
 import { FINGER_LABELS } from "./sceneMatchDemo";
 import { SCORE_TOTAL, enrolledUrl } from "./sceneDemo";
 import {
   IcAvatar, IcCaret, IcChevRight, IcChevUp, IcCheckCircle, IcClose, IcExport, IcFilter,
-  IcEye, IcPageNext, IcPagePrev, IcPencil, IcPlus,
+  IcEye, IcLayers, IcPageNext, IcPagePrev, IcPencil, IcPlus,
   IcTick, IcTrash, IcUpload,
 } from "./sceneMatchIcons";
 
@@ -87,6 +88,10 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
   const [detainees, setDetainees] = useState([]);
   const [exporting, setExporting] = useState(false);  // icon truot xuong roi ve cho khi bam "Xuat bao cao"
   const [showReport, setShowReport] = useState(false); // mo modal xuat bao cao
+  const [showCrossCaseModal, setShowCrossCaseModal] = useState(false); // mo modal chon vu an doi sanh cheo
+  const [extraCaseIds, setExtraCaseIds] = useState([]); // danh sach case_id da chon de doi sanh cheo
+  const [extraCasesList, setExtraCasesList] = useState([]); // thong tin vu an doi sanh cheo
+  const [extraDetainees, setExtraDetainees] = useState([]); // danh sach doi tuong tu vu an doi sanh cheo (khong luu vao DB vu nay)
   // Dong da bam trong bang KET QUA DOI SANH: giu ca id dau vet + row de trang
   // chi tiet hien dung so lieu cua dong do (truoc day tu dung lai theo seq => lech).
   const [full, setFull] = useState(null);   // != null => mo trang chi tiet dau vet
@@ -125,9 +130,13 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
 
   useEffect(() => { load(); }, [load]);
 
+  const allDetainees = useMemo(() => {
+    return [...detainees, ...extraDetainees];
+  }, [detainees, extraDetainees]);
+
   const subjectsList = useMemo(() => {
-    if (detainees.length > 0) {
-      return detainees.map((d, i) => {
+    if (allDetainees.length > 0) {
+      return allDetainees.map((d, i) => {
         const photos = d.photos || {};
         const fingerprints = d.fingerprints || {};
         return {
@@ -137,7 +146,11 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           cccd: d.cccd_number || d.cccd || "—",
           dob: d.dob || d.birth_year || "—",
           sex: d.gender === "female" || d.gender === "Nữ" ? "Nữ" : "Nam",
-          primary: i === 0,
+          primary: i === 0 && !d.is_cross_case,
+          is_cross_case: Boolean(d.is_cross_case),
+          origin_case_code: d.origin_case_code || "",
+          origin_case_name: d.origin_case_name || "",
+          origin_case_id: d.origin_case_id || "",
           photoCount: d.fp_count != null ? d.fp_count : (photos.fp_count || (d.fp_images ? Object.keys(d.fp_images).length : 10)),
           photo: d.portrait || d.portrait_cropped_url || d.portrait_original_url || photos.portrait_front || "",
           right: FINGER_LABELS.map((label, k) => {
@@ -160,40 +173,61 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
       });
     }
     return [];
-  }, [detainees]);
+  }, [allDetainees]);
 
   const baseRows = useMemo(() => {
-    const list = realMatches.map((m, idx) => {
-      const fingerKey = m.finger_code || m.finger;
-      const fingerI18n = fingerKey
-        ? (String(fingerKey).startsWith("fp.") ? fingerKey : `fp.finger.${fingerKey}.long`)
-        : "—";
-      const trace = traces.find((item) => item.id === m.trace_id);
-      const score = Number.isFinite(Number(m.score)) ? Math.round(Number(m.score)) : 0;
-      const percent = m.percent != null ? Number(m.percent) : score / 10;
-      return {
-        id: m.id || m._id || `match-${idx + 1}`,
-        stt: String(idx + 1).padStart(2, "0"),
-        code: m.trace_code || (trace ? traceCode(trace) : `DVHT-${String(m.trace_seq || idx + 1).padStart(4, "0")}`),
-        name: m.name || m.detainee_name || m.subject || "—",
-        cccd: m.cccd || m.detainee_code || "—",
-        finger: fingerI18n,
-        score,
-        pct: `(${percent.toFixed(1)}%)`,
-        time: m.analyzed_at || m.time || m.created_at || "—",
-        latent_landmarks: m.latent_landmarks,
-        latent_dim: m.latent_dim,
-        trace_url: m.trace_url || trace?.url || "",
-        candidate_url: m.candidate_url || "",
-        candidate_landmarks: m.candidate_landmarks,
-        candidate_dim: m.candidate_dim,
-        verdict: m.verdict,
-        trace_id: m.trace_id,
-        detainee_id: m.detainee_id || m.suspect_id || "",
-        portrait_url: m.portrait || m.portrait_cropped_url || m.portrait_original_url || m.photos?.portrait_front || m.photos?.portrait_cropped || m.photo || "",
-        raw: m,
-      };
-    });
+    const validDetaineeIds = new Set(allDetainees.map((d) => String(d.id || d._id || "")));
+    const validExtraCaseIds = new Set(extraCaseIds.map(String));
+
+    const list = realMatches
+      .filter((m) => {
+        if (!m.is_cross_case) {
+          if (detainees.length === 0) return false;
+          if (m.detainee_id && !detainees.some((d) => String(d.id || d._id || "") === String(m.detainee_id))) {
+            return false;
+          }
+          return true;
+        }
+        // Đang là kết quả đối sánh liên vụ: chỉ hiện khi cán bộ đang bật chọn vụ án liên vụ đó
+        if (extraCaseIds.length === 0) return false;
+        if (m.detainee_case_id && !validExtraCaseIds.has(String(m.detainee_case_id))) return false;
+        if (m.detainee_id && validDetaineeIds.size > 0 && !validDetaineeIds.has(String(m.detainee_id))) return false;
+        return true;
+      })
+      .map((m, idx) => {
+        const fingerKey = m.finger_code || m.finger;
+        const fingerI18n = fingerKey
+          ? (String(fingerKey).startsWith("fp.") ? fingerKey : `fp.finger.${fingerKey}.long`)
+          : "—";
+        const trace = traces.find((item) => item.id === m.trace_id);
+        const score = Number.isFinite(Number(m.score)) ? Math.round(Number(m.score)) : 0;
+        const percent = m.percent != null ? Number(m.percent) : score / 10;
+        return {
+          id: m.id || m._id || `match-${idx + 1}`,
+          stt: String(idx + 1).padStart(2, "0"),
+          code: m.trace_code || (trace ? traceCode(trace) : `DVHT-${String(m.trace_seq || idx + 1).padStart(4, "0")}`),
+          name: m.name || m.detainee_name || m.subject || "—",
+          cccd: m.cccd || m.detainee_code || "—",
+          finger: fingerI18n,
+          score,
+          pct: `(${percent.toFixed(1)}%)`,
+          time: m.analyzed_at || m.time || m.created_at || "—",
+          latent_landmarks: m.latent_landmarks,
+          latent_dim: m.latent_dim,
+          trace_url: m.trace_url || trace?.url || "",
+          candidate_url: m.candidate_url || "",
+          candidate_landmarks: m.candidate_landmarks,
+          candidate_dim: m.candidate_dim,
+          verdict: m.verdict,
+          trace_id: m.trace_id,
+          detainee_id: m.detainee_id || m.suspect_id || "",
+          portrait_url: m.portrait || m.portrait_cropped_url || m.portrait_original_url || m.photos?.portrait_front || m.photos?.portrait_cropped || m.photo || "",
+          is_cross_case: Boolean(m.is_cross_case),
+          origin_case_code: m.origin_case_code || "",
+          origin_case_name: m.origin_case_name || "",
+          raw: m,
+        };
+      });
 
     if (bestOnly) {
       const bestMap = new Map();
@@ -208,7 +242,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
     }
 
     return list;
-  }, [realMatches, traces, bestOnly]);
+  }, [realMatches, traces, bestOnly, allDetainees, detainees, extraCaseIds]);
 
   // ----- Ket qua doi sanh: chi co khi phien da co dau vet hien truong -----
   const rows = useMemo(() => {
@@ -349,12 +383,20 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
 
   const deleteSubject = async (subject) => {
     const detainee = subject?.detainee || subject;
-    if (!detainee?.id) return;
+    if (!detainee?.id && !detainee?._id) return;
+    const detId = detainee.id || detainee._id;
+    if (subject.is_cross_case || detainee.is_cross_case) {
+      // Chỉ gỡ khỏi phiên đối sánh mở rộng, không xóa trong CSDL của vụ án gốc
+      setPendingDeleteSubject(null);
+      setExtraDetainees((prev) => prev.filter((d) => (d.id || d._id) !== detId));
+      setOpenSub((current) => (current === subject.id ? "" : current));
+      return;
+    }
     setPendingDeleteSubject(null);
-    setDeletingSubjectId(detainee.id);
+    setDeletingSubjectId(detId);
     setErr("");
     try {
-      await api.deleteDetainee(detainee.id);
+      await api.deleteDetainee(detId);
       setOpenSub((current) => (current === subject.id ? "" : current));
       await load();
     } catch (ex) {
@@ -408,6 +450,62 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
       } finally {
         setClosingCase(false);
       }
+    }
+  };
+
+  const handleConfirmCrossCase = async (selectedIds, selectedList) => {
+    const sIds = selectedIds || [];
+    const sList = selectedList || [];
+    setExtraCaseIds(sIds);
+    setExtraCasesList(sList);
+    setShowCrossCaseModal(false);
+
+    const activeCaseId = currentCaseId || session?.id || session?._id || "";
+    if (!activeCaseId) return;
+
+    setLoading(true);
+    setErr("");
+    try {
+      if (sIds.length > 0) {
+        const extraDetLists = await Promise.all(
+          sIds.map((cid) => api.listDetainees({ case_id: cid }).catch(() => null))
+        );
+        const loaded = [];
+        for (let k = 0; k < sIds.length; k++) {
+          const cid = sIds[k];
+          const cInfo = sList.find((c) => (c.id || c._id) === cid) || {};
+          const items = extraDetLists[k]?.items || [];
+          for (const d of items) {
+            loaded.push({
+              ...d,
+              is_cross_case: true,
+              origin_case_id: cid,
+              origin_case_code: cInfo.code || d.case_code || "",
+              origin_case_name: cInfo.name || d.case_name || "",
+            });
+          }
+        }
+        setExtraDetainees(loaded);
+      } else {
+        setExtraDetainees([]);
+      }
+
+      // Kích hoạt ngay đối sánh chéo với các vụ án được chọn
+      await api.rematchSceneCase(activeCaseId, sIds);
+
+      // Cập nhật ngay kết quả mới và danh sách dấu vết
+      const [traceRes, matchRes] = await Promise.all([
+        api.listSceneTraces(activeCaseId),
+        api.listSceneMatches({ caseId: activeCaseId }),
+      ]);
+      const caseData = traceRes?.case || traceRes?.session || null;
+      if (caseData) setSession(caseData);
+      setTraces(traceRes?.items || []);
+      setRealMatches(matchRes?.items || []);
+    } catch (ex) {
+      setErr(ex.message || t("smp.cross_case.err_match") || "Lỗi khi đối sánh liên vụ án");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -472,6 +570,33 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
               <IcExport />
             </span>
             {t("smp.export")}
+          </button>
+          <button
+            type="button"
+            className={"smp-btn-ghost" + (extraCaseIds.length > 0 ? " smp-btn-active" : "")}
+            onClick={() => setShowCrossCaseModal(true)}
+            title={t("smp.cross_case.btn_title") || "Thêm vụ án đối sánh"}
+            style={extraCaseIds.length > 0 ? { borderColor: "rgba(168, 85, 247, 0.5)", color: "#c084fc", background: "rgba(168, 85, 247, 0.1)" } : undefined}
+          >
+            <span className="smp-ic">
+              <IcLayers />
+            </span>
+            {t("smp.cross_case.btn_title") || "Thêm vụ án đối sánh"}
+            {extraCaseIds.length > 0 && (
+              <span
+                style={{
+                  background: "#a855f7",
+                  color: "#fff",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  borderRadius: "10px",
+                  padding: "1px 6px",
+                  marginLeft: "4px",
+                }}
+              >
+                +{extraCaseIds.length}
+              </span>
+            )}
           </button>
           <button
             type="button"
@@ -690,6 +815,39 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           </div>
         </div>
 
+        {extraCaseIds.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "9px 14px",
+              background: "rgba(168, 85, 247, 0.12)",
+              border: "1px solid rgba(168, 85, 247, 0.35)",
+              borderRadius: "8px",
+              margin: "0 0 12px 0",
+              fontSize: "13px",
+              color: "#e9d5ff",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 16 }}>🔗</span>
+              <span>
+                <strong>Đang đối sánh mở rộng</strong> với <strong>{extraCaseIds.length} vụ án khác</strong> ({extraDetainees.length} hồ sơ đối tượng liên vụ)
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn-link"
+              style={{ color: "#fca5a5", cursor: "pointer", fontSize: "12px", textDecoration: "none", fontWeight: 500 }}
+              onClick={() => handleConfirmCrossCase([], [])}
+              title="Dừng đối sánh liên vụ và quay lại chỉ đối sánh vụ án hiện tại"
+            >
+              ✕ Hủy đối sánh liên vụ
+            </button>
+          </div>
+        )}
+
         {/* Design bo head+body trong 1 khung vien bo goc (kieu bang Excel). */}
         <div className="smp-mt-wrap">
         <div className="smp-mt-head">
@@ -733,7 +891,30 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
                 <div>
                   <img className="smp-thumb-sm" src={it?.url || r.trace_url} alt={r.code} loading="lazy" />
                 </div>
-                <div className="smp-ellip">{r.name}</div>
+                <div className="smp-ellip">
+                  <span>{r.name}</span>
+                  {r.is_cross_case && (
+                    <span
+                      className="smp-chip smp-chip-purple"
+                      style={{
+                        marginLeft: 6,
+                        fontSize: "11px",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        background: "rgba(168, 85, 247, 0.15)",
+                        color: "#c084fc",
+                        border: "1px solid rgba(168, 85, 247, 0.3)",
+                        fontWeight: 500,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 3,
+                      }}
+                      title={`Nghi phạm từ vụ án: ${r.origin_case_code || ""} ${r.origin_case_name || ""}`}
+                    >
+                      🔗 {r.origin_case_code ? `Vụ ${r.origin_case_code}` : (t("smp.cross_case.badge") || "Liên vụ")}
+                    </span>
+                  )}
+                </div>
                 <div className="smp-dim">{r.cccd}</div>
                 <div className="smp-dim smp-ellip">{t(r.finger)}</div>
                 <div>
@@ -870,6 +1051,17 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           items={traces}
           rows={baseRows}
           onClose={() => setShowReport(false)}
+        />
+      )}
+
+      {showCrossCaseModal && (
+        <CrossCaseCompareModal
+          open={true}
+          currentCaseId={currentCaseId || session?.id || session?._id}
+          currentCaseCode={session?.code || session?.case_code || ""}
+          initialSelectedCaseIds={extraCaseIds}
+          onClose={() => setShowCrossCaseModal(false)}
+          onConfirm={handleConfirmCrossCase}
         />
       )}
     </div>
@@ -1058,10 +1250,13 @@ function SceneTracePanel({
                 onClick={(e) => { e.stopPropagation(); setZoom(it); }}
               />
               <div className="smp-tr-meta">
-                <div className="smp-strong">{traceCode(it)}</div>
-                <div className="smp-dim smp-ellip">{fileName(it.url)}</div>
+                <span className="smp-strong">{traceCode(it)}</span>
+                {it.collection_source && (
+                  <span className="smp-dim smp-ellip smp-tr-src" title={it.collection_source}>
+                    • {it.collection_source}
+                  </span>
+                )}
               </div>
-              <div className="smp-dim smp-ellip smp-tr-src">{it.collection_source || ""}</div>
               <div className="smp-dim smp-tr-time">{formatDateTime(it.captured_at)}</div>
               {actions(it, false)}
             </div>
@@ -1187,6 +1382,7 @@ function SubjectPanel({
   t, subjects, openSub, setOpenSub, onOpenDetainee, onDelete, deletingId, onAdd, addDisabledHint,
 }) {
   const total = subjects.length;
+  const crossCount = subjects.filter((s) => s.is_cross_case).length;
   const photos = subjects.reduce((n, s) => n + s.photoCount, 0);
 
   return (
@@ -1195,7 +1391,13 @@ function SubjectPanel({
         <div className="smp-panel-title">
           <span className="smp-h">{t("smp.sub.title")}</span>
           <span className="smp-badge">
-            {t("smp.sub.count", { n: String(total).padStart(2, "0") })} • {t("smp.sub.photos", { n: photos })}
+            {t("smp.sub.count", { n: String(total).padStart(2, "0") })}
+            {crossCount > 0 && (
+              <span style={{ color: "#c084fc", marginLeft: 4 }}>
+                ({total - crossCount} + {crossCount} {t("smp.cross_case.badge_label") || "liên vụ"})
+              </span>
+            )}
+            {" • "}{t("smp.sub.photos", { n: photos })}
           </span>
         </div>
         <div className="smp-panel-tools">
@@ -1225,6 +1427,23 @@ function SubjectPanel({
                     <span className="smp-strong">{s.name}</span>
                     {s.primary && (
                       <span className="smp-chip smp-chip-blue">{t("smp.sub.primary")}</span>
+                    )}
+                    {s.is_cross_case && (
+                      <span
+                        className="smp-chip smp-chip-purple"
+                        style={{
+                          fontSize: "11px",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          background: "rgba(168, 85, 247, 0.15)",
+                          color: "#c084fc",
+                          border: "1px solid rgba(168, 85, 247, 0.3)",
+                          fontWeight: 500,
+                        }}
+                        title={`Đối tượng thuộc vụ án: ${s.origin_case_code || ""} ${s.origin_case_name || ""}`}
+                      >
+                        🔗 {s.origin_case_code ? `Vụ ${s.origin_case_code}` : "Liên vụ"}
+                      </span>
                     )}
                   </div>
                   <div className="smp-sub-fields">
@@ -1265,8 +1484,8 @@ function SubjectPanel({
                     className="smp-sub-delete"
                     disabled={deletingId === s.id}
                     onClick={() => onDelete(s)}
-                    aria-label={t("common.delete")}
-                    title={t("common.delete")}
+                    aria-label={s.is_cross_case ? (t("smp.cross_case.remove_subject") || "Bỏ khỏi đối sánh") : t("common.delete")}
+                    title={s.is_cross_case ? (t("smp.cross_case.remove_subject") || "Bỏ khỏi đối sánh (không xóa CSDL)") : t("common.delete")}
                   ><IcTrash s={15} /></button>
                   <button
                     type="button"
@@ -1283,7 +1502,26 @@ function SubjectPanel({
                     {s.photo ? <img src={s.photo} alt={s.name} loading="lazy" /> : <IcAvatar />}
                   </div>
                   <div>
-                    <div className="smp-strong">{s.name}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span className="smp-strong">{s.name}</span>
+                      {s.is_cross_case && (
+                        <span
+                          className="smp-chip smp-chip-purple"
+                          style={{
+                            fontSize: "10px",
+                            padding: "1px 5px",
+                            borderRadius: "4px",
+                            background: "rgba(168, 85, 247, 0.15)",
+                            color: "#c084fc",
+                            border: "1px solid rgba(168, 85, 247, 0.3)",
+                            fontWeight: 500,
+                          }}
+                          title={`Đối tượng thuộc vụ án: ${s.origin_case_code || ""} ${s.origin_case_name || ""}`}
+                        >
+                          🔗 {s.origin_case_code ? `Vụ ${s.origin_case_code}` : "Liên vụ"}
+                        </span>
+                      )}
+                    </div>
                     <div className="smp-dim">CCCD: {s.cccd}</div>
                   </div>
                 </div>
@@ -1294,8 +1532,8 @@ function SubjectPanel({
                     className="smp-sub-delete"
                     disabled={deletingId === s.id}
                     onClick={(e) => { e.stopPropagation(); onDelete(s); }}
-                    aria-label={t("common.delete")}
-                    title={t("common.delete")}
+                    aria-label={s.is_cross_case ? (t("smp.cross_case.remove_subject") || "Bỏ khỏi đối sánh") : t("common.delete")}
+                    title={s.is_cross_case ? (t("smp.cross_case.remove_subject") || "Bỏ khỏi đối sánh (không xóa CSDL)") : t("common.delete")}
                   ><IcTrash s={15} /></button>
                   <IcChevRight />
                 </div>

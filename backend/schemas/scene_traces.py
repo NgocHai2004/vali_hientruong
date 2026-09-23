@@ -20,3 +20,8 @@ class HbieConfigIn(BaseModel):
 
 class FingerprintConfigIn(BaseModel):
     by_finger: dict
+
+
+class SceneRematchRequest(BaseModel):
+    case_id: Optional[str] = None
+    extra_case_ids: Optional[list[str]] = None

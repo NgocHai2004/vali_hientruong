@@ -511,34 +511,40 @@ label.smp-drop.on {
 }
 
 .smp-tr-row {
-  /* 5 cot: anh | ma+ten file | vi tri | thoi gian | nut. */
+  /* 4 cot gon tren 1 dong: anh | ma + nguon | thoi gian | nut */
   display: grid;
-  grid-template-columns: 48px minmax(0, 1.2fr) minmax(0, 1fr) 124px 90px;
+  grid-template-columns: 38px minmax(0, 1.5fr) auto 84px;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  min-height: 62px;
+  gap: 10px;
+  padding: 6px 10px;
+  min-height: 48px;
   box-sizing: border-box;
-  border-radius: 10px;
+  border-radius: 8px;
   flex: 0 0 auto;
-  border: 1.5px solid #1b3355;
+  border: 1px solid #1b3355;
   background: rgba(11, 24, 44, .7);
+  white-space: nowrap;
 }
 
 .smp-tr-row:hover {
   border-color: #3a5f8c;
+  background: rgba(18, 38, 70, 0.75);
 }
 
 .smp-tr-meta {
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .smp-thumb-md {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   border-radius: 6px;
   border: 1px solid #2b4a72;
   object-fit: cover;
@@ -554,12 +560,16 @@ label.smp-drop.on {
 }
 
 .smp-tr-src {
-  text-align: left;
+  font-size: 12px;
+  opacity: 0.8;
+  max-width: 140px;
 }
 
 .smp-tr-time {
   text-align: right;
+  font-size: 12px;
   padding-right: 4px;
+  white-space: nowrap;
 }
 
 /* Hồ sơ đối tượng */

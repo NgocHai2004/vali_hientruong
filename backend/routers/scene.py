@@ -19,7 +19,7 @@ from core.config import (
     FP_KEY_BY_CODE,
 )
 from core.security import get_current_user
-from schemas.scene_traces import SceneTracePatch, SceneReportGenerateRequest
+from schemas.scene_traces import SceneTracePatch, SceneReportGenerateRequest, SceneRematchRequest
 from services.hbie_matcher import (
     _spawn_match,
     _match_trace,
@@ -37,12 +37,14 @@ _report_jobs: dict[str, dict] = {}
 _report_sem = asyncio.Semaphore(2)
 
 
+from core.storage import get_case_upload_dir
+
 def _require_scene_key(request: Request) -> None:
     if SCENE_API_KEY and request.headers.get("X-Scene-Key", "") != SCENE_API_KEY:
         raise HTTPException(401, "Sai X-Scene-Key")
 
 
-async def _save_scene_image(data: bytes, ext: str) -> tuple[str, str]:
+async def _save_scene_image(data: bytes, ext: str, case_id: Optional[str] = None) -> tuple[str, str]:
     ext = (ext or "").lower()
     if ext not in SCENE_ALLOWED_EXT:
         raise HTTPException(400, "Chỉ hỗ trợ ảnh jpg/png/webp")
@@ -51,10 +53,11 @@ async def _save_scene_image(data: bytes, ext: str) -> tuple[str, str]:
     if len(data) > SCENE_MAX_BYTES:
         raise HTTPException(400, "Ảnh vượt quá 10MB")
     name = f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{ObjectId()}{ext}"
-    path = os.path.join(SCENE_UPLOAD_DIR, name)
+    fs_dir, url_prefix = get_case_upload_dir(case_id, sub_folder="traces")
+    path = os.path.join(fs_dir, name)
     with open(path, "wb") as f:
         f.write(data)
-    return f"/uploads/scene/{name}", name
+    return f"{url_prefix}/{name}", name
 
 
 async def _insert_scene_trace(
@@ -158,7 +161,7 @@ async def scene_push(
 
     case_doc = await _scene_case_or_400(cid)
     db_module._ensure_case_editable(case_doc)
-    url, _ = await _save_scene_image(data, ext)
+    url, _ = await _save_scene_image(data, ext, case_id=str(case_doc["_id"]))
     doc = await _insert_scene_trace(
         case_doc, url, len(data), ext,
         source="push", note=note_in, device_id=dev, created_by="",
@@ -209,7 +212,7 @@ async def create_scene_trace(
     db_module._ensure_case_editable(case_doc)
     data = await file.read()
     ext = os.path.splitext(file.filename or "")[1].lower() or ".jpg"
-    url, _ = await _save_scene_image(data, ext)
+    url, _ = await _save_scene_image(data, ext, case_id=str(case_doc["_id"]))
     doc = await _insert_scene_trace(
         case_doc, url, len(data), ext,
         source="camera" if source == "camera" else "upload",
@@ -245,7 +248,7 @@ async def create_scene_traces_batch(
         try:
             data = await file.read()
             ext = os.path.splitext(filename)[1].lower() or ".jpg"
-            url, _ = await _save_scene_image(data, ext)
+            url, _ = await _save_scene_image(data, ext, case_id=str(case_doc["_id"]))
             try:
                 doc = await _insert_scene_trace(
                     case_doc, url, len(data), ext,
@@ -508,33 +511,49 @@ async def rematch_scene_trace(
 @router.post("/api/scene/rematch")
 async def rematch_scene_case(
     case_id: Optional[str] = Query(default=None),
+    body: Optional[SceneRematchRequest] = None,
     request: Request = None,
     user: dict = Depends(get_current_user),
 ):
     if not hbie_service.FEATURE_HBIE_MATCH:
         raise HTTPException(503, "Tính năng đối sánh HBIE đang tắt (FEATURE_HBIE_MATCH=0).")
-    case_doc = await _scene_case_or_400(case_id)
+    effective_case_id = (body.case_id if body and body.case_id else case_id)
+    extra_case_ids = (body.extra_case_ids if body and body.extra_case_ids else [])
+    case_doc = await _scene_case_or_400(effective_case_id)
+    traces = await db_module.db.scene_traces.find({"case_id": db_module._case_id_query(case_doc)}).sort("seq", 1).to_list(1000)
+    traces_count = len(traces)
     matched_count = 0
-    traces_count = 0
     errors = []
-    async for tr in db_module.db.scene_traces.find({"case_id": db_module._case_id_query(case_doc)}).sort("seq", 1):
-        traces_count += 1
-        try:
-            res = await _match_trace(tr, case_doc)
-            matched_count += res.get("count", 0)
-        except Exception as e:
-            errors.append(f"Dấu vết #{tr.get('seq')}: {e}")
-            await db_module.db.scene_traces.update_one(
-                {"_id": tr["_id"]},
-                {"$set": {"match_status": "error", "match_error": str(e)[:300], "matched_at": datetime.utcnow()}},
-            )
+    sem = asyncio.Semaphore(5)
+
+    async def _process_trace(tr):
+        async with sem:
+            try:
+                res = await _match_trace(tr, case_doc, extra_case_ids=extra_case_ids)
+                return res.get("count", 0), None
+            except Exception as e:
+                err_msg = f"Dấu vết #{tr.get('seq')}: {e}"
+                await db_module.db.scene_traces.update_one(
+                    {"_id": tr["_id"]},
+                    {"$set": {"match_status": "error", "match_error": str(e)[:300], "matched_at": datetime.utcnow()}},
+                )
+                return 0, err_msg
+
+    results = await asyncio.gather(*[_process_trace(tr) for tr in traces], return_exceptions=True)
+    for r in results:
+        if isinstance(r, tuple):
+            matched_count += r[0]
+            if r[1]:
+                errors.append(r[1])
+
     await db_module._log(request, user, "match", "scene_case", case_doc.get("code", ""),
                ref_id=str(case_doc["_id"]), case_id=case_doc["_id"],
-               data={"traces_count": traces_count, "matched_count": matched_count, "errors": errors})
+               data={"traces_count": traces_count, "matched_count": matched_count, "extra_case_ids": extra_case_ids, "errors": errors})
     return {
         "ok": True,
         "traces_count": traces_count,
         "matched_count": matched_count,
+        "extra_case_ids": extra_case_ids,
         "errors": errors,
     }
 
@@ -542,10 +561,11 @@ async def rematch_scene_case(
 @router.post("/api/scene/cases/{case_id}/match")
 async def rematch_scene_case_by_id(
     case_id: str,
+    body: Optional[SceneRematchRequest] = None,
     request: Request = None,
     user: dict = Depends(get_current_user),
 ):
-    return await rematch_scene_case(case_id=case_id, request=request, user=user)
+    return await rematch_scene_case(case_id=case_id, body=body, request=request, user=user)
 
 
 @router.get("/api/scene/hbie/health")

@@ -77,6 +77,8 @@ async def delete_user(user_id: str, request: Request, admin: dict = Depends(requ
     return {"ok": True}
 
 
+from core.storage import get_avatar_upload_dir, safe_delete_upload_file
+
 @router.post("/api/users/{user_id}/avatar")
 async def upload_user_avatar(user_id: str, file: UploadFile = File(...), request: Request = None, admin: dict = Depends(require_admin)):
     target = await db_module.db.users.find_one({"_id": db_module._oid(user_id)})
@@ -86,15 +88,19 @@ async def upload_user_avatar(user_id: str, file: UploadFile = File(...), request
     if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
         raise HTTPException(400, "Chỉ hỗ trợ ảnh jpg/png/webp")
     data = await file.read()
-    if len(data) > 3 * 1024 * 1024:
-        raise HTTPException(400, "Ảnh vượt quá 3MB")
-    avatars_dir = os.path.join(UPLOAD_DIR, "avatars")
-    os.makedirs(avatars_dir, exist_ok=True)
-    name = f"avatar_{target['username']}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}{ext}"
-    path = os.path.join(avatars_dir, name)
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(400, "Ảnh vượt quá 5MB")
+    
+    # Xoa avatar cu neu co
+    if target.get("avatar_url"):
+        safe_delete_upload_file(target["avatar_url"])
+
+    fs_dir, url_prefix = get_avatar_upload_dir(target.get("username") or user_id)
+    name = f"avatar_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}{ext}"
+    path = os.path.join(fs_dir, name)
     with open(path, "wb") as f:
         f.write(data)
-    avatar_url = f"/uploads/avatars/{name}"
+    avatar_url = f"{url_prefix}/{name}"
     await db_module.db.users.update_one({"_id": db_module._oid(user_id)}, {"$set": {"avatar_url": avatar_url}})
     await db_module._log(request, admin, "update", "user", target["username"], {"action": "avatar"})
     return {"ok": True, "avatar_url": avatar_url}

@@ -145,7 +145,7 @@ async def list_logs(
     if case_code:
         case = await db_module.db.cases.find_one({"code": case_code})
         if case:
-            filt["case_id"] = case["_id"]
+            filt["case_id"] = db_module._case_id_query(case)
         else:
             filt["case_id"] = None
             filt["_impossible"] = True
@@ -157,12 +157,12 @@ async def list_logs(
     async def _resolve_detainee(ref_id, ref):
         if not ref_id and not ref:
             return None
-        key = ref_id or ("ref:" + ref)
+        key = str(ref_id) if ref_id else ("ref:" + str(ref))
         if key not in detainee_cache:
             d = None
             if ref_id:
                 try:
-                    d = await db_module.db.detainees.find_one({"_id": db_module._oid(ref_id)})
+                    d = await db_module.db.detainees.find_one({"_id": db_module._oid(str(ref_id))})
                 except Exception:
                     d = None
             if d is None and ref:
@@ -170,15 +170,22 @@ async def list_logs(
             detainee_cache[key] = {
                 "full_name": (d or {}).get("full_name", "") or "",
                 "cccd_number": (d or {}).get("cccd_number", "") or "",
+                "case_id": (d or {}).get("case_id"),
             } if d else None
         return detainee_cache[key]
 
     async def _resolve_case(cid):
-        if cid is None:
+        if not cid:
             return None
         key = str(cid)
         if key not in case_cache:
-            c = await db_module.db.cases.find_one({"_id": cid})
+            c = None
+            try:
+                c = await db_module.db.cases.find_one({"_id": db_module._oid(str(cid))})
+            except Exception:
+                pass
+            if c is None:
+                c = await db_module.db.cases.find_one({"_id": cid})
             case_cache[key] = {
                 "code": c.get("code", ""),
                 "name": c.get("name", ""),
@@ -204,11 +211,14 @@ async def list_logs(
         if isinstance(l.get("at"), datetime):
             l["at"] = l["at"].isoformat()
         cid = l.get("case_id")
+        det = await _resolve_detainee(l.get("ref_id"), l.get("ref"))
+        if not cid and det and det.get("case_id"):
+            cid = det["case_id"]
         l["case"] = await _resolve_case(cid) if cid is not None else None
         if cid is not None:
             l["case_id"] = str(cid)
         l["officer"] = await _resolve_user(l.get("actor"))
-        l["detainee"] = await _resolve_detainee(l.get("ref_id"), l.get("ref"))
+        l["detainee"] = det
         items.append(l)
 
     counts = {"create": 0, "update": 0, "delete": 0, "login": 0, "import": 0, "sync": 0}

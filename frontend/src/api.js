@@ -231,11 +231,20 @@ export const api = {
     body: JSON.stringify({ template_b64: templateB64 }),
   }),
 
-  uploadPhoto: async (file, type = "") => {
+  uploadPhoto: async (file, typeOrOpts = "") => {
     const fd = new FormData();
     fd.append("file", file);
-    const qs = type ? `?type=${encodeURIComponent(type)}` : "";
-    return request(`/api/upload/photo${qs}`, { method: "POST", body: fd });
+    const qs = new URLSearchParams();
+    if (typeof typeOrOpts === "string") {
+      if (typeOrOpts) qs.set("type", typeOrOpts);
+    } else if (typeOrOpts && typeof typeOrOpts === "object") {
+      if (typeOrOpts.type) qs.set("type", typeOrOpts.type);
+      if (typeOrOpts.category) qs.set("category", typeOrOpts.category);
+      if (typeOrOpts.detaineeId || typeOrOpts.detainee_id) qs.set("detainee_id", typeOrOpts.detaineeId || typeOrOpts.detainee_id);
+      if (typeOrOpts.caseId || typeOrOpts.case_id) qs.set("case_id", typeOrOpts.caseId || typeOrOpts.case_id);
+    }
+    const qStr = qs.toString();
+    return request(`/api/upload/photo${qStr ? `?${qStr}` : ""}`, { method: "POST", body: fd });
   },
 
 
@@ -338,9 +347,16 @@ export const api = {
   },
   // Doi sanh lai 1 dau vet: chay DONG BO (cho ket qua trả về) — khac luc upload
   // (chay nen). Dung khi anh loi luc up, hoac vu an vua them doi tuong moi.
-  rematchSceneTrace: (id) => request(`/api/scene/traces/${id}/match`, { method: "POST" }),
-  // Doi sanh lai TOAN BO dau vet trong vu an
-  rematchSceneCase: (caseId) => request(`/api/scene/rematch${caseId ? `?case_id=${encodeURIComponent(caseId)}` : ""}`, { method: "POST" }),
+  // Doi sanh lai TOAN BO dau vet trong vu an (ho tro them extra_case_ids de doi sanh lien vu)
+  rematchSceneCase: (caseId, extraCaseIds = []) => {
+    if (extraCaseIds && extraCaseIds.length > 0) {
+      return request("/api/scene/rematch", {
+        method: "POST",
+        body: JSON.stringify({ case_id: caseId, extra_case_ids: extraCaseIds }),
+      });
+    }
+    return request(`/api/scene/rematch${caseId ? `?case_id=${encodeURIComponent(caseId)}` : ""}`, { method: "POST" });
+  },
   hbieHealth: () => request("/api/scene/hbie/health"),
   generateSceneReport: ({ caseId, scope = "all", matchId = null }) =>
     request("/api/scene/reports/generate", {

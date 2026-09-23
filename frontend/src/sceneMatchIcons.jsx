@@ -177,3 +177,12 @@ export const IcAvatar = () => (
     <path d="M4 96c0-19 15-30 34-30s34 11 34 30" fill="#3b506c" />
   </svg>
 );
+
+export const IcLayers = ({ s = 16 }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" strokeWidth="1.8" {...S}>
+    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+    <polyline points="2 17 12 22 22 17" />
+    <polyline points="2 12 12 17 22 12" />
+  </svg>
+);
+
