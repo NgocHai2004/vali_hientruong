@@ -412,3 +412,149 @@
   background: linear-gradient(90deg, #e4edf8 25%, #f2f7fc 37%, #e4edf8 63%) !important;
   background-size: 400% 100% !important;
 }
+
+/* ============================================================
+   Nen sang: chu man Vu an / Doi sanh / Chi tiet dau vet ro net hon.
+   Cac man nay khai bao mau chu CUNG cho nen toi (#e8eef8, #fff, #9bb3d3...) nen tren
+   nen trang chu gan nhu bien mat. Khoi nay (SINH TU DONG tu sceneMatch.css) ep:
+     - chu sang/trang (do sang >= 0.75)  -> #0a1833 (gan den xanh)
+     - chu xam-xanh nhat (0.5 - 0.75)     -> #4a607f (~6.6:1 tren nen trang)
+   Mau co nghia (xanh la/cam/do) va chu tren nen mau (nut chinh, chip) giu rieng ben duoi.
+   ============================================================ */
+:root[data-app-theme="light"] .app :is(.smp, .scp, .stf) {
+  --smp-dim: #4a607f;
+  --stf-dim: #4a607f;
+  --stf-ok: #0b7a3e;
+  --stf-blue: #087df2;
+  --stf-line: #d8e6f4;
+  --stf-line2: #c9dced;
+  --stf-card-line: #bed7f1;
+}
+:root[data-app-theme="light"] .app .smp-back,
+:root[data-app-theme="light"] .app .smp-mt-go,
+:root[data-app-theme="light"] .app .smp-drop-sub,
+:root[data-app-theme="light"] .app .smp-sub-toggle,
+:root[data-app-theme="light"] .app .smp-hand-title,
+:root[data-app-theme="light"] .app .smp-sub-row-right,
+:root[data-app-theme="light"] .app .smp-field-clear,
+:root[data-app-theme="light"] .app .scp-date-clear,
+:root[data-app-theme="light"] .app .smp-center,
+:root[data-app-theme="light"] .app .smp-badge-sep,
+:root[data-app-theme="light"] .app .smp-menu-btn,
+:root[data-app-theme="light"] .app .scp-seg button,
+:root[data-app-theme="light"] .app .scp-refresh,
+:root[data-app-theme="light"] .app .scp-sub2,
+:root[data-app-theme="light"] .app .scp-chip-grey,
+:root[data-app-theme="light"] .app .scp-acts .smp-icon-btn,
+:root[data-app-theme="light"] .app .scp-go,
+:root[data-app-theme="light"] .app .scp-pg-gap,
+:root[data-app-theme="light"] .app .stf-portrait-empty,
+:root[data-app-theme="light"] .app .stf-k,
+:root[data-app-theme="light"] .app .stf-subject-row dt,
+:root[data-app-theme="light"] .app .stf-file-sub,
+:root[data-app-theme="light"] .app .stf-file-progress-label,
+:root[data-app-theme="light"] .app .stf-stat-of,
+:root[data-app-theme="light"] .app .smp-pop-cap,
+:root[data-app-theme="light"] .app .smp-opt,
+:root[data-app-theme="light"] .app .smp-adv-x,
+:root[data-app-theme="light"] .app .smp-adv-lb,
+:root[data-app-theme="light"] .app .smp-seg button,
+:root[data-app-theme="light"] .app .smp-adv-scorehd,
+:root[data-app-theme="light"] .app .smp-adv-num,
+:root[data-app-theme="light"] .app .smp-adv-max,
+:root[data-app-theme="light"] .app .smp-adv-ticks,
+:root[data-app-theme="light"] .app .smp-modal-lb,
+:root[data-app-theme="light"] .app .smp-modal-note,
+:root[data-app-theme="light"] .app .smp-mt-head {
+  color: #4a607f !important;
+}
+:root[data-app-theme="light"] .app .smp-btn-ghost,
+:root[data-app-theme="light"] .app .smp-badge,
+:root[data-app-theme="light"] .app .smp-strong,
+:root[data-app-theme="light"] .app .smp-search,
+:root[data-app-theme="light"] .app .smp-select,
+:root[data-app-theme="light"] .app .smp-pg-mid button,
+:root[data-app-theme="light"] .app .smp-drop-main,
+:root[data-app-theme="light"] .app .smp-sub-fields,
+:root[data-app-theme="light"] .app .smp-dim2,
+:root[data-app-theme="light"] .app .smp-btn-line,
+:root[data-app-theme="light"] .app .smp-field,
+:root[data-app-theme="light"] .app .smp-field input,
+:root[data-app-theme="light"] .app .smp-field select,
+:root[data-app-theme="light"] .app .scp-date,
+:root[data-app-theme="light"] .app .scp-date input,
+:root[data-app-theme="light"] .app .smp-menu-pop>button,
+:root[data-app-theme="light"] .app .smp-menu-pop>a,
+:root[data-app-theme="light"] .app .scp-name,
+:root[data-app-theme="light"] .app .scp-num,
+:root[data-app-theme="light"] .app .scp-num .smp-badge,
+:root[data-app-theme="light"] .app .stf-crumb-cur,
+:root[data-app-theme="light"] .app .stf-h,
+:root[data-app-theme="light"] .app .stf-v,
+:root[data-app-theme="light"] .app .stf-subject-row dd,
+:root[data-app-theme="light"] .app .stf-file-title,
+:root[data-app-theme="light"] .app .stf-doc-card-hint,
+:root[data-app-theme="light"] .app .stf-verify-finger,
+:root[data-app-theme="light"] .app .smp-trg,
+:root[data-app-theme="light"] .app .smp-adv-title,
+:root[data-app-theme="light"] .app .smp-adv-sel,
+:root[data-app-theme="light"] .app .smp-adv-reset,
+:root[data-app-theme="light"] .app .smp-act-view,
+:root[data-app-theme="light"] .app .smp-act-edit,
+:root[data-app-theme="light"] .app .smp-modal-title,
+:root[data-app-theme="light"] .app .smp-modal-in,
+:root[data-app-theme="light"] .app .smp-modal-cancel,
+:root[data-app-theme="light"] .app .smp-modal-msg {
+  color: #0a1833 !important;
+}
+
+/* Nhan dau bang: xanh dam cung tong voi cac bang khac, khong phai xam nhat. */
+:root[data-app-theme="light"] .app .smp-mt-head,
+:root[data-app-theme="light"] .app .scp-t thead th {
+  color: #24527f !important;
+  font-weight: 600;
+}
+
+/* Placeholder cua o tim kiem/nhap: du tuong phan nhung van nhat hon chu that. */
+:root[data-app-theme="light"] .app .smp-search::placeholder,
+:root[data-app-theme="light"] .app .smp-field input::placeholder,
+:root[data-app-theme="light"] .app .smp-modal-in::placeholder {
+  color: #62779a !important;
+}
+
+/* Mau co nghia tren nen sang. */
+:root[data-app-theme="light"] .app .smp-chip-green,
+:root[data-app-theme="light"] .app .stf-chip-ok,
+:root[data-app-theme="light"] .app .stf-verdict.ok,
+:root[data-app-theme="light"] .app .stf-file-progress-val.ok,
+:root[data-app-theme="light"] .app .stf-stat-ok {
+  color: #0b7a3e !important;
+}
+
+:root[data-app-theme="light"] .app .smp-chip-blue {
+  color: #0b62c4 !important;
+}
+
+:root[data-app-theme="light"] .app .stf-verdict.warn,
+:root[data-app-theme="light"] .app .stf-file-progress-val.warn {
+  color: #b45309 !important;
+}
+
+:root[data-app-theme="light"] .app .smp-sub-delete,
+:root[data-app-theme="light"] .app .smp-menu-del,
+:root[data-app-theme="light"] .app .smp-act-del,
+:root[data-app-theme="light"] .app .smp-panel-trace .smp-bulk-del,
+:root[data-app-theme="light"] .app .scp-acts .smp-icon-btn.scp-danger {
+  color: #c5283d !important;
+}
+
+:root[data-app-theme="light"] .app .stf-h {
+  border-bottom-color: var(--app-line) !important;
+}
+
+/* Chu tren nen mau dac (trang thai dang chon): giu trang, khong bi ep dam o tren. */
+:root[data-app-theme="light"] .app .smp-pg-mid button.on,
+:root[data-app-theme="light"] .app .smp-seg button.on {
+  color: #ffffff !important;
+}
+

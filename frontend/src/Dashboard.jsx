@@ -256,7 +256,7 @@ export default function Dashboard({ username = "admin", role = "user", fullName 
             <SceneMatchPage
               caseId={sceneCaseId}
               onBack={() => setSceneCaseId("")}
-              onAddSubject={addSubjectFromScene}
+              onAddSubject={isAdmin ? undefined : addSubjectFromScene}
               onOpenDetainee={editDetainee}
             />
           ) : (

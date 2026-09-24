@@ -9,7 +9,7 @@ import { FINGER_LABELS } from "./sceneMatchDemo";
 import { SCORE_TOTAL, enrolledUrl } from "./sceneDemo";
 import {
   IcAvatar, IcCaret, IcChevRight, IcChevUp, IcCheckCircle, IcClose, IcExport, IcFilter,
-  IcEye, IcLayers, IcPageNext, IcPagePrev, IcPencil,
+  IcEye, IcLayers, IcPageNext, IcPagePrev, IcPencil, IcPlus,
   IcTick, IcTrash, IcUpload,
 } from "./sceneMatchIcons";
 
@@ -662,6 +662,13 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           onOpenDetainee={onOpenDetainee}
           onDelete={setPendingDeleteSubject}
           deletingId={deletingSubjectId}
+          // Chi co onAddSubject khi tai khoan duoc thu nhan ho so (admin thi Dashboard khong truyen
+          // -> an nut). Vu an da ket thuc: van hien nut nhung vo hieu + giai thich.
+          canAdd={Boolean(onAddSubject)}
+          onAdd={onAddSubject && !(session && session.status === "closed")
+            ? () => onAddSubject(session?.id || currentCaseId)
+            : null}
+          addDisabledHint={session && session.status === "closed" ? t("smp.sub.add_closed") : ""}
         />
       </div>
 
@@ -1390,7 +1397,7 @@ function TraceEditModal({ t, item, code, onClose, onSave }) {
 
 /* ---------- Panel: HỒ SƠ ĐỐI TƯỢNG (data giả) ---------- */
 function SubjectPanel({
-  t, subjects, openSub, setOpenSub, onOpenDetainee, onDelete, deletingId,
+  t, subjects, openSub, setOpenSub, onOpenDetainee, onDelete, deletingId, canAdd, onAdd, addDisabledHint,
 }) {
   const total = subjects.length;
   const crossCount = subjects.filter((s) => s.is_cross_case).length;
@@ -1411,6 +1418,17 @@ function SubjectPanel({
             {" • "}{t("smp.sub.photos", { n: photos })}
           </span>
         </div>
+        {canAdd && (
+          <div className="smp-panel-tools">
+            <button
+              type="button"
+              className="smp-btn-primary"
+              onClick={onAdd || undefined}
+              disabled={!onAdd}
+              title={addDisabledHint || undefined}
+            ><IcPlus />{t("smp.sub.add")}</button>
+          </div>
+        )}
       </div>
 
       <div className="smp-sub-list">

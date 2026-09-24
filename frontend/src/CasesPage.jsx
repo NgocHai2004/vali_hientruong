@@ -5,8 +5,8 @@ import CaseFormModal from "./CaseFormModal";
 import Button from "./components/Button";
 import { PageHeader } from "./components/common/CommonUI";
 import {
-  IcChevRight, IcInfo, IcPencil, IcPlus,
-  IcReanalyze, IcSearch, IcTrash,
+  IcInfo, IcPlus,
+  IcReanalyze, IcSearch,
 } from "./sceneMatchIcons";
 
 // Trang quản lý vụ án — bước đầu của tab Dấu vết hiện trường.
@@ -153,14 +153,14 @@ export default function CasesPage({ role = "user", onPick, onOpenCase }) {
         </button>
       </div>
 
-      <section className="smp-panel smp-panel-match">
+      <div className="detainees-table-wrap scp-cases">
         {err && <div className="lg-err" role="alert">{err}</div>}
 
-        <div className="scp-wrap">
+        <div className="detainees-table-scroll">
           {/* <table> thật, không grid: chỉ 6 cột và không phải canh pixel theo
               design như bảng đối sánh, nên lấy luôn semantics hàng/cột của bảng
               cho trình đọc màn hình thay vì tự khai role. */}
-          <table className="scp-t" aria-busy={loading || undefined}>
+          <table className="detainees-table scp-t" aria-busy={loading || undefined}>
             <thead>
               <tr>
                 <th scope="col">{t("case.col.case")}</th>
@@ -213,50 +213,46 @@ export default function CasesPage({ role = "user", onPick, onOpenCase }) {
                       </div>
                     </td>
                     <td className="scp-num">
-                      <span className="smp-badge">{c.detainee_count ?? 0}</span>
+                      {c.detainee_count ?? 0}
                     </td>
                     <td>
                       {/* Ký hiệu ● / ✓ nằm sẵn trong chuỗi dịch nên trạng thái
                           không chỉ dựa vào màu. Đã kết thúc dùng chip xám: xanh
                           #2272e8 là màu hành động, để dành cho vụ đang điều tra. */}
-                      <span className={"smp-chip " + (open ? "smp-chip-green" : "scp-chip-grey")}>
+                      <span className={"sync-badge " + (open ? "open" : "closed")}>
                         {t(open ? "case.status.investigating_dot" : "case.status.closed_dot")}
                       </span>
                     </td>
                     {/* stopPropagation ở cả ô: bấm nút hành động không được kéo
                         theo click-mở-vụ của cả hàng. */}
                     <td className="scp-acts" onClick={(e) => e.stopPropagation()}>
-                      <div className="scp-acts-wrap">
+                      <div className="row-actions" style={{ justifyContent: "flex-end" }}>
                         <button
                           type="button"
-                          className="smp-icon-btn"
                           onClick={() => onOpenCase && onOpenCase(c.id)}
                           aria-label={t("case.act.detail", { name })}
                           title={t("case.act.detail_short")}
                         >
-                          <IcChevRight />
+                          {t("common.view")}
                         </button>
                         {!isAdmin && open && (
                           <>
                             <button
                               type="button"
-                              className="smp-icon-btn"
                               disabled={busy}
                               onClick={() => setForm(c)}
                               aria-label={t("case.act.edit", { name })}
-                              title={t("common.edit")}
                             >
-                              <IcPencil />
+                              {t("common.edit")}
                             </button>
                             <button
                               type="button"
-                              className="smp-icon-btn scp-danger"
+                              className="danger-text"
                               disabled={busy}
                               onClick={() => removeCase(c)}
                               aria-label={t("case.act.delete", { name })}
-                              title={t("common.delete")}
                             >
-                              <IcTrash />
+                              {t("common.delete")}
                             </button>
                           </>
                         )}
@@ -297,7 +293,7 @@ export default function CasesPage({ role = "user", onPick, onOpenCase }) {
             >{t("common.next")}</button>
           </div>
         </div>
-      </section>
+      </div>
 
       {form && (
         <CaseFormModal

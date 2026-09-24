@@ -212,7 +212,6 @@ export function SettingsPage() {
                     />
                   </FieldRow>
                   <p className="settings-fp-note">{t("settings.hbie.keep_score.desc")}</p>
-
                   <div className="modal-actions" style={{ marginTop: 0 }}>
                     <button
                       type="button"

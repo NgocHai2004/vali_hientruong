@@ -3472,7 +3472,7 @@
   }
   .report-stat.blue { --accent: var(--primary); --soft: rgba(22, 139, 255, 0.10); }
   .report-stat.green { --accent: var(--success); --soft: rgba(36, 215, 119, 0.12); }
-  .report-stat.orange { --accent: var(--warn); --soft: rgba(255, 176, 32, 0.12); }
+  .report-stat.orange { --accent: #E0B463; --soft: rgba(224, 180, 99, 0.14); }
   .report-stat.purple { --accent: var(--primary-hi); --soft: rgba(40, 93, 222, 0.14); }
   .report-stat-icon {
     width: 3rem; height: 3rem;
@@ -5439,9 +5439,9 @@
     background: radial-gradient(circle at 92% 50%, rgba(139,69,255,.12), transparent 42%), var(--bg-panel);
   }
   .app.dashboard-active .stat-card.orange {
-    --accent: #FF8412; --soft: rgba(255,132,18,.16);
-    border-color: rgba(255,132,18,.25);
-    background: radial-gradient(circle at 92% 50%, rgba(255,132,18,.13), transparent 42%), var(--bg-panel);
+    --accent: #E0B463; --soft: rgba(224,180,99,.14);
+    border-color: rgba(224,180,99,.22);
+    background: radial-gradient(circle at 92% 50%, rgba(224,180,99,.10), transparent 42%), var(--bg-panel);
   }
   .app.dashboard-active .stat-card.green {
     --accent: #13D98A; --soft: rgba(19,217,138,.16);
@@ -5755,7 +5755,7 @@
 /* Mau: chi giu 4 sac trung voi trang Lich su (tim -> cyan, cam/xanh la nhu cu). */
 .app.dashboard-active .stat-card.blue   { --accent: #168BFF; --soft: rgba(22, 139, 255, 0.16); }
 .app.dashboard-active .stat-card.purple { --accent: #35D8FF; --soft: rgba(53, 216, 255, 0.16); }
-.app.dashboard-active .stat-card.orange { --accent: #ffb020; --soft: rgba(255, 176, 32, 0.16); }
+.app.dashboard-active .stat-card.orange { --accent: #E0B463; --soft: rgba(224, 180, 99, 0.14); }
 .app.dashboard-active .stat-card.green  { --accent: #24d777; --soft: rgba(36, 215, 119, 0.16); }
 
 .app.dashboard-active .stat-icon {
@@ -5826,3 +5826,59 @@
 .app.dashboard-active .hardware-tile-fill { box-shadow: none; }
 .app.dashboard-active .dashboard-page .hw-bar-fill { box-shadow: none; }
 .app.dashboard-active[data-dashboard-theme="light"] .hardware-tile-icon { color: #0a6fd6; background: rgba(22, 139, 255, 0.12); }
+
+/* --- Tieu de trang (PageHeader) gon lai: it khoang trong tren/duoi --- */
+/* PageHeader render <h2>, nhung CSS tieu de chi khai bao cho <h1> => h2 an margin mac
+   dinh cua trinh duyet (~0.83em tren + duoi) cong voi padding-top 1.25rem cua .page
+   => ~3.5rem trong truoc chu. Dua h2 ve cung kieu h1 va thu padding tren. */
+.page-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.375rem;
+  line-height: 1.25;
+  letter-spacing: -0.025rem;
+}
+.page-header > div > p,
+.page-header .muted {
+  margin: 0.125rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+.page:has(> .page-header:first-child),
+.page:has(> .report-fixed:first-child > .page-header:first-child) {
+  padding-top: 0.5rem;
+}
+.page > .page-header,
+.page > .report-fixed > .page-header { margin-bottom: 0; }
+
+/* Trang Vu an (CasesPage) dung .scp chu khong phai .page nen khong an rule thu padding
+   tren o tren - ket qua tieu de cach tren nhieu hon cac trang khac. Dung cung gia tri. */
+.scp:has(> .page-header:first-child) {
+  padding-top: 0.5rem;
+}
+
+/* Man Phan tich doi sanh: bo net ke ngang phia tren thanh phan trang cua bang Ket qua doi sanh
+   (bang da co khung vien rieng, net ke them tao thanh vach thua o day). */
+.smp .smp-panel-match .smp-pg {
+  border-top: 0;
+}
+
+/* Chan bang (Tong + phan trang): dong bo trang Dong bo voi trang Ho so / Lich su.
+   Trang Dong bo tu khai bao mau nen/vien nut/bo goc rieng (nen toolbar tint xanh, nut
+   tint xanh, goc 0.75rem) nen nhin khac cac trang con lai. Dua ve cung gia tri voi
+   .detainees-table-wrap. Ca hai loai bang deu bi `.pagination { margin-top: 1.25rem }`
+   chung day nhom nut xuong lech khoi "Tong: n" - dat 0 de cung hang giua. */
+.sync-table-wrap {
+  border-radius: 0.5rem;
+  box-shadow: none;
+}
+.sync-table-wrap .session-list-toolbar {
+  background: var(--bg-panel);
+}
+.sync-table-wrap .pagination button {
+  background: var(--bg-panel);
+}
+.sync-table-wrap .session-list-toolbar .pagination,
+.detainees-table-wrap .session-list-toolbar .pagination {
+  margin-top: 0;
+}

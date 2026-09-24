@@ -3813,7 +3813,7 @@ textarea.smp-modal-in {
 .smp-mt-head,
 .smp-mt-row {
   grid-template-columns:
-    3.5rem 1.25fr 6.5rem 1.55fr 1.3fr 1.6fr 1.15fr 1.05fr 1.35fr 2.5rem;
+    5.5rem 1.25fr 6.5rem 1.55fr 1.3fr 1.6fr 1.15fr 1.05fr 1.35fr 2.5rem;
   align-items: stretch;
   gap: 0;
 }
@@ -4297,4 +4297,76 @@ textarea.smp-modal-in {
    hang khong vua thi sang trang sau. */
 .smp-panel-match .smp-mt-body {
   overflow: hidden;
+}
+
+/* ============================================================
+   Bang Vu an (CasesPage) - don gian nhu bang Ho so: khung .detainees-table-wrap,
+   tieu de xanh nhan tren nen xanh nhat, chu thuong, khong vach mau/chip/icon.
+   Dat CUOI sceneMatch.css: file nay nap SAU dashboard.css nen cac luat .scp-t o tren
+   (nen #0e1f38 !important, vach xanh la, chip...) chi bi thang khi viet o day voi do
+   dac hieu cao hon (.scp-cases ...).
+   ============================================================ */
+.scp-cases { flex: 1 1 0; min-height: 0; }
+.scp-cases .detainees-table-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.scp-cases .scp-t { border-collapse: collapse; table-layout: fixed; font-size: 0.8438rem; min-width: 0; }
+.scp-cases .scp-t thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background:
+    linear-gradient(rgba(22, 139, 255, 0.08), rgba(22, 139, 255, 0.08)),
+    #0a1a34 !important;
+  color: var(--primary-2) !important;
+  padding: 0.5625rem 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.0125rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+.scp-cases .scp-t thead th:nth-child(5) { text-align: center; }
+.scp-cases .scp-t thead th.scp-th-acts { text-align: right; }
+.scp-cases .scp-t tbody td {
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8438rem;
+  color: var(--text);
+  vertical-align: middle;
+}
+.scp-cases .scp-t tbody tr:last-child td { border-bottom: 0; }
+.scp-cases .scp-t tbody tr:hover td { background: rgba(22, 139, 255, 0.08); box-shadow: none; }
+.scp-cases .scp-t tbody tr.on td:first-child,
+.scp-cases .scp-t tbody tr:hover td:first-child,
+.scp-cases .scp-t tbody tr:focus-within td:first-child { box-shadow: none; }
+.scp-cases .scp-name { color: var(--text); font-size: 0.8438rem; font-weight: 600; }
+.scp-cases .scp-sub2 { color: var(--muted); font-size: 0.75rem; margin-top: 0.125rem; }
+.scp-cases .scp-num { color: var(--text) !important; font-weight: 400; }
+.scp-cases .scp-acts { white-space: nowrap; }
+.scp-cases .scp-t th:nth-child(1) { width: 19%; }
+.scp-cases .scp-t th:nth-child(2) { width: 16%; }
+.scp-cases .scp-t th:nth-child(3) { width: 13%; }
+.scp-cases .scp-t th:nth-child(4) { width: 19%; }
+.scp-cases .scp-t th:nth-child(5) { width: 11%; }
+.scp-cases .scp-t th:nth-child(6) { width: 12%; }
+.scp-cases .scp-t th.scp-th-acts,
+.scp-cases .scp-t td.scp-acts { width: 12.5rem; min-width: 12.5rem; }
+.scp-cases .session-list-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding: 0.5rem 0.875rem;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.scp-cases .session-list-toolbar .pagination { margin-top: 0; }
+.scp-cases .session-list-toolbar .pagination button { background: var(--bg-panel); }
+@media (max-width: 1180px) {
+  .scp-cases .scp-t th:nth-child(1) { width: 40%; }
+  .scp-cases .scp-t th:nth-child(2) { width: 22%; }
+  .scp-cases .scp-t th:nth-child(5) { width: 12%; }
+  .scp-cases .scp-t th:nth-child(6) { width: 14%; }
 }
