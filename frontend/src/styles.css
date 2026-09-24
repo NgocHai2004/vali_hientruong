@@ -11446,56 +11446,6 @@ table thead th {
 /* Toast khong che thanh nut. */
 .app .capture-page.cap-flat .capture-banner { bottom: 4.25rem; }
 
-/* ============================================================
-   Muc IV (Dac diem nhan dang) nam DUOI anh nhan dang, trong cot phai.
-   Truoc day no la hang tran ngang rieng, con cot phai chi co 3 anh => cot trai
-   (I + II) cao hon nhieu de lai khoang trong lon duoi muc III.
-   Luoi 4 cot cu (kem translateX bu lech theo hinh hoc tran ngang) khong con dung
-   trong nua trang => ve 2 cot giong muc I/II. Dung #id de thang moi rule
-   .cap-grid--identify o tren (ke ca :nth-child(4n+x)).
-   ============================================================ */
-.cap-flat .cap-col #cap-sec-identify .cap-grid--identify {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.cap-flat .cap-col #cap-sec-identify .cap-grid--identify .info-field {
-  grid-template-columns: minmax(var(--cf-lab), max-content) minmax(0, 1fr);
-  transform: none;
-}
-.cap-flat .cap-col #cap-sec-identify .cap-grid--identify .span-2col { grid-column: 1 / -1; }
-
-/* ============================================================
-   Cot phai (III anh + IV dac diem) cao hon cot trai (I + II) => khoang trong duoi
-   muc II. Cho cot trai KEO CAO bang cot phai, phan du do o "Ghi chu" (hang cuoi
-   cua muc II) hap thu: ghi chu thanh o nhap lon, cac hang o tren giu nguyen khoang
-   cach. Neu cot trai cao hon thi khong co gi gian ra. Chi ap tren man rong: duoi
-   900px luoi don cot, so hang khac.
-   ============================================================ */
-@media (min-width: 901px) {
-  .cap-flat .cap-sheet--split > .cap-col:first-child { align-self: stretch; }
-  .cap-flat .cap-col > #cap-sec-case {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-  }
-  .cap-flat #cap-sec-case > .cap-sec-body {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-  }
-  /* 5 hang: 4 hang o (auto) + Ghi chu (nhan phan con du). */
-  .cap-flat #cap-sec-case .cap-grid--case {
-    flex: 1 1 auto;
-    grid-template-rows: repeat(4, auto) minmax(0, 1fr);
-  }
-  .cap-flat #cap-sec-case .cap-grid--case > .span-3col { align-self: stretch; }
-  .cap-flat #cap-sec-case .cap-grid--case > .span-3col .cap-textarea {
-    align-self: stretch;
-    height: 100%;
-    min-height: 3.5rem;
-    resize: none;
-  }
-}
-
 /* Ô ngày dd/mm/yyyy (components/common/DateTimeInput.jsx): chữ + nút lịch gốc ẩn. */
 .date-input { position: relative; display: block; width: 100%; }
 .date-input > input.control { width: 100%; padding-right: 2.25rem; box-sizing: border-box; }

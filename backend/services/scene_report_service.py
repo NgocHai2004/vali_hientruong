@@ -3,6 +3,7 @@ import re
 import io
 import base64
 import asyncio
+import shutil
 import tempfile
 import uuid
 from html import escape
@@ -341,7 +342,7 @@ async def build_scene_report_data(
 
 
 def render_html_report(data: dict) -> str:
-    """Renders the HTML template matching our A4 Landscape specification."""
+    """Renders the HTML template matching our A4 Portrait specification."""
     def render_field(f: dict) -> str:
         val = escape(str(f.get("val", "")), quote=True)
         if f.get("is_mock"):
@@ -349,12 +350,53 @@ def render_html_report(data: dict) -> str:
             return f'<span class="mock-data" title="{label}">{val} <span class="mock-tag">[{label}]</span></span>'
         return val
 
-    pairs_html = []
-    for idx, p in enumerate(data.get("pairs", [])):
+    def render_pair(p: dict) -> str:
         fig_num = int(p["figure_num"])
         tr_code = render_field(p["trace_code"])
         rf_code = render_field(p["ref_code"])
+        return f"""
+            <div class="sr-figure">
+              <div class="sr-figure-title">
+                Figure {fig_num}. Dấu vết tiềm ẩn {tr_code} - trùng khớp dấu vân tham chiếu {rf_code}
+              </div>
+              <div class="sr-match-card-wrap">
+                <div class="sr-match-card">
+                  <div class="sr-match-col">
+                    <div class="sr-match-img-box">
+                      <img src="{escape(p['latent_img'], quote=True)}" alt="Latent" />
+                    </div>
+                    <div class="sr-match-label">Ảnh hiện trường: {tr_code}</div>
+                  </div>
+                  <div class="sr-match-divider" aria-hidden="true">
+                    <span class="sr-match-line"></span>
+                    <span class="sr-match-vs">vs</span>
+                    <span class="sr-match-line"></span>
+                  </div>
+                  <div class="sr-match-col">
+                    <div class="sr-match-img-box">
+                      <img src="{escape(p['cand_img'], quote=True)}" alt="Candidate" />
+                    </div>
+                    <div class="sr-match-label">Ảnh đối sánh: {rf_code}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        """
 
+    # Trang A4 dọc: trang đầu phụ lục có phần giới thiệu nên chỉ xếp 1 cặp,
+    # các trang sau xếp 2 cặp/trang để không bỏ trống nửa trang khi in.
+    pairs = data.get("pairs", [])
+    first_page_pairs = 1
+    pairs_per_page = 2
+    pair_pages = []
+    if pairs:
+        pair_pages.append(pairs[:first_page_pairs])
+        pair_pages.extend(
+            pairs[i:i + pairs_per_page] for i in range(first_page_pairs, len(pairs), pairs_per_page)
+        )
+
+    pairs_html = []
+    for idx, page_pairs in enumerate(pair_pages):
         intro_block = ""
         if idx == 0:
             intro_block = f"""
@@ -377,35 +419,12 @@ def render_html_report(data: dict) -> str:
             </div>
             """
 
-        page_cls = "sr-page-a4 sr-appendix-page" + (" sr-page-subsequent" if idx > 0 else "")
+        figures_html = "\n".join(render_pair(p) for p in page_pairs)
         pairs_html.append(f"""
-        <div class="{page_cls}">
+        <div class="sr-page-a4 sr-appendix-page">
           <div class="sr-section">
             {intro_block}
-            <div class="sr-figure-title">
-              Figure {fig_num}. Dấu vết tiềm ẩn {tr_code} - trùng khớp dấu vân tham chiếu {rf_code}
-            </div>
-            <div class="sr-match-card-wrap">
-              <div class="sr-match-card">
-                <div class="sr-match-col">
-                  <div class="sr-match-img-box">
-                    <img src="{escape(p['latent_img'], quote=True)}" alt="Latent" />
-                  </div>
-                  <div class="sr-match-label">Ảnh hiện trường: {tr_code}</div>
-                </div>
-                <div class="sr-match-divider" aria-hidden="true">
-                  <span class="sr-match-line"></span>
-                  <span class="sr-match-vs">vs</span>
-                  <span class="sr-match-line"></span>
-                </div>
-                <div class="sr-match-col">
-                  <div class="sr-match-img-box">
-                    <img src="{escape(p['cand_img'], quote=True)}" alt="Candidate" />
-                  </div>
-                  <div class="sr-match-label">Ảnh đối sánh: {rf_code}</div>
-                </div>
-              </div>
-            </div>
+            {figures_html}
           </div>
           <div class="sr-page-footer">
             <div class="sr-sec-notice">
@@ -451,7 +470,7 @@ def render_html_report(data: dict) -> str:
   <title>Báo cáo kết quả đối sánh vân tay - {escape(str(data['case_code']))}</title>
   <style>
     @page {{
-      size: A4 landscape;
+      size: A4 portrait;
       margin: 0;
     }}
     * {{
@@ -467,13 +486,13 @@ def render_html_report(data: dict) -> str:
       print-color-adjust: exact;
     }}
     .sr-page-a4 {{
-      width: 297mm;
-      height: 210mm;
-      min-height: 210mm;
-      max-height: 210mm;
-      max-width: 297mm;
+      width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
+      max-width: 210mm;
       background: #ffffff;
-      padding: 12.7mm 12.7mm 22mm 12.7mm;
+      padding: 15mm 15mm 36mm 15mm;
       position: relative;
       overflow: hidden;
       display: flex;
@@ -505,13 +524,13 @@ def render_html_report(data: dict) -> str:
     }}
     .sr-page-footer {{
       position: absolute;
-      bottom: 5mm;
-      left: 12.7mm;
-      right: 12.7mm;
+      bottom: 8mm;
+      left: 15mm;
+      right: 15mm;
     }}
     .sr-sec-notice {{
-      font-size: 12.5pt;
-      line-height: 1.35;
+      font-size: 9pt;
+      line-height: 1.3;
       text-align: justify;
       margin-bottom: 2px;
       color: #000000;
@@ -660,8 +679,12 @@ def render_html_report(data: dict) -> str:
       letter-spacing: 0.3px;
       line-height: 1.3;
     }}
+    .sr-figure {{
+      margin-bottom: 8mm;
+      break-inside: avoid;
+    }}
     .sr-figure-title {{
-      font-size: 13.6pt;
+      font-size: 12pt;
       font-style: italic;
       text-align: center;
       color: #505050;
@@ -680,10 +703,9 @@ def render_html_report(data: dict) -> str:
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      max-width: 250mm;
       background: #ffffff;
       border: none;
-      padding: 4px 8px;
+      padding: 4px 0;
     }}
     .sr-match-col {{
       flex: 1;
@@ -695,8 +717,7 @@ def render_html_report(data: dict) -> str:
     .sr-match-img-box {{
       position: relative;
       width: 100%;
-      max-width: 108mm;
-      height: 80mm;
+      height: 82mm;
       background: #ffffff;
       border: 1px solid #cbd5e1;
       border-radius: 4px;
@@ -704,9 +725,6 @@ def render_html_report(data: dict) -> str:
       display: flex;
       align-items: center;
       justify-content: center;
-    }}
-    .sr-page-subsequent .sr-match-img-box {{
-      height: 100mm;
     }}
     .sr-match-img-box img {{
       width: 100%;
@@ -722,7 +740,7 @@ def render_html_report(data: dict) -> str:
       width: 28px;
       height: 35mm;
       flex-shrink: 0;
-      margin: 0 8px 18px 8px;
+      margin: 0 6px 18px 6px;
     }}
     .sr-match-line {{
       width: 1px;
@@ -1072,12 +1090,22 @@ async def generate_scene_report_pdf(
         tf.write(html_content)
         temp_html_path = tf.name
 
+    # Hồ sơ trình duyệt riêng cho mỗi lần in: khỏi đụng hồ sơ Edge thật của máy
+    # (và 2 lần in song song không tranh khoá nhau). Đo thực tế nhanh hơn ~0,2 giây.
+    profile_dir = tempfile.mkdtemp(prefix="report_profile_")
     cmd = [
         chromium,
         "--headless=new",
         "--disable-gpu",
         "--run-all-compositor-stages-before-draw",
         "--no-pdf-header-footer",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-extensions",
+        "--disable-background-networking",
+        "--disable-component-update",
+        "--disable-sync",
+        f"--user-data-dir={profile_dir}",
         f"--print-to-pdf={pdf_path}",
         temp_html_path,
     ]
@@ -1101,6 +1129,7 @@ async def generate_scene_report_pdf(
             raise RuntimeError("Chromium không tạo được file PDF hoặc file tạo ra rỗng.")
         return pdf_path
     finally:
+        shutil.rmtree(profile_dir, ignore_errors=True)
         try:
             if os.path.isfile(temp_html_path):
                 os.remove(temp_html_path)

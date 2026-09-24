@@ -1,5 +1,7 @@
 import asyncio
 import base64
+import hashlib
+import json
 import os
 import uuid
 from datetime import datetime
@@ -649,10 +651,58 @@ async def generate_scene_report_endpoint(
         current_user=user, upload_dir=UPLOAD_DIR,
     )
     report_id = uuid.uuid4().hex[:12]
+
+    # Dữ liệu báo cáo không đổi (cùng người lập, cùng ngày, cùng ảnh/kết quả) thì
+    # dùng lại PDF đã in thay vì mở Edge in lại — bước này tốn 1,5–3 giây.
+    data_hash = hashlib.sha256(
+        json.dumps(report_data, sort_keys=True, default=str, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+    try:
+        prev = await db_module.db.report_jobs.find_one(
+            {"data_hash": data_hash, "status": "completed"},
+            sort=[("created_at", -1)],
+        )
+    except Exception:
+        prev = None
+    if prev and prev.get("pdf_path") and os.path.isfile(prev["pdf_path"]):
+        done = {
+            "_id": report_id,
+            "id": report_id,
+            "owner": user["username"],
+            "case_id": body.case_id,
+            "scope": body.scope or "all",
+            "match_id": body.match_id,
+            "status": "completed",
+            "progress": 100,
+            "created_at": datetime.utcnow().isoformat(),
+            "pdf_path": prev["pdf_path"],
+            "filename": prev.get("filename"),
+            "url": f"/api/scene/reports/{report_id}/pdf",
+            "error": None,
+            "data_hash": data_hash,
+        }
+        _report_jobs[report_id] = done
+        try:
+            await db_module.db.report_jobs.insert_one(dict(done))
+        except Exception:
+            pass
+        return {"report_id": report_id, "status": "completed", "cached": True}
+
+    # Đang in sẵn cùng nội dung (do lần mở màn đối sánh gọi trước) thì bám vào job
+    # đó, đừng mở thêm một Edge nữa khi người dùng bấm xuất đúng lúc nó chưa xong.
+    for j in _report_jobs.values():
+        if (
+            j.get("data_hash") == data_hash
+            and j.get("owner") == user["username"]
+            and j.get("status") in ("pending", "generating")
+        ):
+            return {"report_id": j["id"], "status": j["status"], "cached": False}
+
     job_data = {
         "_id": report_id,
         "id": report_id,
         "owner": user["username"],
+        "data_hash": data_hash,
         "case_id": body.case_id,
         "scope": body.scope or "all",
         "match_id": body.match_id,

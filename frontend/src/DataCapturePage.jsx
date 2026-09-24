@@ -1565,9 +1565,7 @@ export default function DataCapturePage({
 
         </div>
 
-        {/* ---- Cot phai: anh nhan dang (III) + dac diem nhan dang (IV) - dac diem
-             xep duoi anh de lap khoang trong duoi anh (cot trai I+II cao hon
-             nhieu). Van tay (V) da tach xuong hang
+        {/* ---- Cot phai: chi anh nhan dang. Van tay (V) da tach xuong hang
              rieng ben duoi vi luoi 10 o + 3 anh chum khong du cho trong nua o
              ngang; de canh muc III thi o van tay bi bop nho. ---- */}
         <div className="cap-col">
@@ -1584,8 +1582,11 @@ export default function DataCapturePage({
             />
           </div>
         </section>
+        </div>
 
-        {/* ================ IV. DAC DIEM NHAN DANG (duoi anh, cung cot phai) ================ */}
+        {/* ---- Hang giua, trai het be ngang: dac diem nhan dang ---- */}
+        <div className="cap-col cap-col--full">
+        {/* ================ IV. DAC DIEM NHAN DANG ================ */}
         <section className="cap-sec" id="cap-sec-identify">
           <h2 className="cap-sec-title">{t("capture.roman.4")}</h2>
           <div className="cap-sec-body">
