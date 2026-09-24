@@ -1959,53 +1959,50 @@ export default function DataCapturePage({
               </div>
             </div>
 
+            {/* Thanh nut (Xoa / Chi ban / Danh ban / Luu) nam DUOI 3 o van chum
+                cua muc 2, thu nho cho vua cot phai (CSS: .fp-side > .case-action-bar). */}
+            <div className="case-action-bar">
+              <button type="button" className="button danger" disabled={saving} onClick={resetAll}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
+                </svg>
+                {t("capture.actions.clear")}
+              </button>
+              {/* Xem truoc CHI BAN: to rieng theo mau chi ban giay (van tay + nhan
+                  than toi thieu). Nut "Xem truoc ho so" da bo khoi trang thu nhan. */}
+              <button type="button" className="button secondary" disabled={saving}
+                onClick={() => setFpSheetOpen(true)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M7 8h4M7 12h4M7 16h2M15 8v8" />
+                </svg>
+                {t("capture.actions.preview_fpsheet")}
+              </button>
+              {/* Xem truoc DANH BAN: mau 204 + 208 (nhan than + 2 ngon tro + 3 anh 3x4). */}
+              <button type="button" className="button secondary" disabled={saving}
+                onClick={() => setNameSheetOpen(true)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                  <circle cx="9" cy="10" r="2.2" />
+                  <path d="M5.5 17c0.6-2 1.9-3 3.5-3s2.9 1 3.5 3M15 9h4M15 13h4" />
+                </svg>
+                {t("capture.actions.preview_namesheet")}
+              </button>
+              <button type="button" className="button primary"
+                disabled={!allRequiredValid || saving} onClick={submit}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <path d="M17 21v-8H7v8M7 3v5h8" />
+                </svg>
+                {saving ? t("common.saving") : isEdit ? t("capture.actions.update") : t("capture.actions.save")}
+              </button>
+            </div>
             </div>{/* /fp-side */}
             </div>{/* /fp-two-col */}
           </div>
         </section>
         </div>
 
-      </div>
-
-      {/* ================ Thanh nut (footer co dinh) ================
-          La con TRUC TIEP cua .capture-page, dung SAU .case-main: .case-main la
-          vung cuon duy nhat, thanh nay flex: 0 0 auto nen luon nam day khung
-          nhin, khong bi cuon di va khong lam tang them vung cuon long nhau. */}
-      <div className="case-action-bar">
-        <button type="button" className="button danger" disabled={saving} onClick={resetAll}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
-          </svg>
-          {t("capture.actions.clear")}
-        </button>
-        {/* Xem truoc CHI BAN: to rieng theo mau chi ban giay (van tay + nhan
-            than toi thieu). Nut "Xem truoc ho so" da bo khoi trang thu nhan. */}
-        <button type="button" className="button secondary" disabled={saving}
-          onClick={() => setFpSheetOpen(true)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <path d="M7 8h4M7 12h4M7 16h2M15 8v8" />
-          </svg>
-          {t("capture.actions.preview_fpsheet")}
-        </button>
-        {/* Xem truoc DANH BAN: mau 204 + 208 (nhan than + 2 ngon tro + 3 anh 3x4). */}
-        <button type="button" className="button secondary" disabled={saving}
-          onClick={() => setNameSheetOpen(true)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="16" rx="2" />
-            <circle cx="9" cy="10" r="2.2" />
-            <path d="M5.5 17c0.6-2 1.9-3 3.5-3s2.9 1 3.5 3M15 9h4M15 13h4" />
-          </svg>
-          {t("capture.actions.preview_namesheet")}
-        </button>
-        <button type="button" className="button primary"
-          disabled={!allRequiredValid || saving} onClick={submit}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-            <path d="M17 21v-8H7v8M7 3v5h8" />
-          </svg>
-          {saving ? t("common.saving") : isEdit ? t("capture.actions.update") : t("capture.actions.save")}
-        </button>
       </div>
 
       {nameSheetOpen && (

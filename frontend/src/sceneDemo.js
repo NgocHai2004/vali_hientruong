@@ -290,7 +290,7 @@ export function demoMatch(item, row) {
     total: SCORE_TOTAL,
     percent: String(row.pct).replace(/[^\d.]/g, ""),
     finger: row.finger,
-    subject: `Nghi phạm: ${row.name} (CCCD ${row.cccd})`,
+    subject: `${row.name} (CCCD ${row.cccd})`,
     analyzed_at: row.time,
     analyst: DEMO_OFFICER,
     quality: "Cao",

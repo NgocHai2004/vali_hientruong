@@ -1114,6 +1114,8 @@
   "scene.match.scope.session": "Trong vụ án này",
   "scene.match.scope_label": "Phạm vi đối sánh:",
   "scene.match.subject": "Đối tượng đối sánh",
+  "scene.trace.subject_info": "Thông tin đối tượng",
+  "scene.trace.subject_view_detail": "Xem chi tiết đối tượng",
   "scene.match.title": "Kết quả đối sánh",
   "scene.match.v_match": "TRÙNG KHỚP",
   "scene.match.v_review": "CẦN THẨM ĐỊNH",

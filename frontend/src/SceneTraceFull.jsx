@@ -214,7 +214,7 @@ export default function SceneTraceFull({ item, row = {}, session, detainees = []
   const totalCount = candidateDots.length || m.total;
   const percentStr = safeRow.pct || `${m.percent}%`;
   const fingerLabel = safeRow.finger ? t(safeRow.finger) : t(m.finger);
-  const subjectLabel = safeRow.name ? `Nghi phạm: ${safeRow.name}${safeRow.cccd && safeRow.cccd !== "—" ? ` (CCCD ${safeRow.cccd})` : ""}` : m.subject;
+  const subjectLabel = safeRow.name ? `${safeRow.name}${safeRow.cccd && safeRow.cccd !== "—" ? ` (CCCD ${safeRow.cccd})` : ""}` : m.subject;
 
   const traceType = item.trace_type && item.trace_type !== "—" ? item.trace_type : "Vân tay";
   const collectionSource = item.collection_source && item.collection_source !== "—" ? item.collection_source : "Trực tiếp";
@@ -462,7 +462,7 @@ export default function SceneTraceFull({ item, row = {}, session, detainees = []
         </div>
       </div>
 
-      {/* Ảnh chính diện của đối tượng | Thông tin dấu vết | Thông tin nghi phạm */}
+      {/* Ảnh chính diện của đối tượng | Thông tin dấu vết | Thông tin đối tượng */}
       <div className="stf-top">
         <div className="stf-latent stf-portrait-box">
           {portraitUrl ? (
@@ -508,12 +508,12 @@ export default function SceneTraceFull({ item, row = {}, session, detainees = []
 
         <section className="stf-card stf-subject">
           <div className="stf-card-head">
-            <h3 className="stf-h">{t("detainee.detail.subtitle")}</h3>
+            <h3 className="stf-h">{t("scene.trace.subject_info")}</h3>
             <button
               type="button"
               className="smp-btn-primary stf-btn-detail"
               onClick={handleOpenDetaineeDetail}
-              title={t("detainee.view_detail") || "Xem chi tiết nghi phạm"}
+              title={t("scene.trace.subject_view_detail")}
             >
               <IcEye s={13} />
               <span>{t("common.detail") || "Chi tiết"}</span>

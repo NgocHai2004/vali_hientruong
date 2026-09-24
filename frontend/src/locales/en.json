@@ -1114,6 +1114,8 @@
   "scene.match.scope.session": "Within this case",
   "scene.match.scope_label": "Match scope:",
   "scene.match.subject": "Matched subject",
+  "scene.trace.subject_info": "Subject information",
+  "scene.trace.subject_view_detail": "View subject details",
   "scene.match.title": "Matching result",
   "scene.match.v_match": "MATCH",
   "scene.match.v_review": "NEEDS REVIEW",
