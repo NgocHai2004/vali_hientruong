@@ -229,28 +229,30 @@ export function SettingsPage() {
                 </div>
 
                 <div>
-                  <table className="settings-preview-table">
-                    <thead>
-                      <tr>
-                        <th>{t("settings.hbie.bands.col_range")}</th>
-                        <th>{t("settings.hbie.bands.col_effect")}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>{mOk ? `≥ ${mNum}` : "—"}</td>
-                        <td>{t("smp.matched")}</td>
-                      </tr>
-                      <tr>
-                        <td>{pairOk ? `${kNum} – ${mNum - 1}` : "—"}</td>
-                        <td>{t("smp.review")}</td>
-                      </tr>
-                      <tr>
-                        <td>{kOk ? `< ${kNum}` : "—"}</td>
-                        <td>{t("settings.hbie.bands.dropped")}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <div className="settings-preview-table-wrap">
+                    <table className="settings-preview-table">
+                      <thead>
+                        <tr>
+                          <th>{t("settings.hbie.bands.col_range")}</th>
+                          <th>{t("settings.hbie.bands.col_effect")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>{mOk ? `≥ ${mNum}` : "—"}</td>
+                          <td>{t("smp.matched")}</td>
+                        </tr>
+                        <tr>
+                          <td>{pairOk ? `${kNum} – ${mNum - 1}` : "—"}</td>
+                          <td>{t("smp.review")}</td>
+                        </tr>
+                        <tr>
+                          <td>{kOk ? `< ${kNum}` : "—"}</td>
+                          <td>{t("settings.hbie.bands.dropped")}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
 
                   {thrLowered ? (
                     <p className="settings-fp-note" style={{ color: "var(--danger, #e5484d)" }}>

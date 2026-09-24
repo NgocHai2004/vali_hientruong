@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
+  BatteryCharging,
   Brain,
   ClipboardList,
   Cpu,
@@ -9,6 +10,7 @@ import {
   MemoryStick,
   Plus,
   ShieldCheck,
+  Thermometer,
 } from "lucide-react";
 import { api } from "../../api";
 import Button from "../../components/Button";
@@ -139,32 +141,44 @@ export function DonutGender({ male, female, malePct, femalePct }) {
 }
 
 export function HardwareTile({ value, label, tone, icon }) {
+  const pct = Math.max(0, Math.min(100, Number(value) || 0));
   return (
-    <div className={`hardware-tile hardware-tile-${tone}`} aria-label={`${label}: ${value}%`} title={`${label}: ${value}%`}>
-      <span className="hardware-tile-icon" aria-hidden="true">{icon}</span>
+    <div className={`hardware-tile hardware-tile-${tone}`} aria-label={`${label}: ${pct}%`} title={`${label}: ${pct}%`}>
+      <div className="hardware-tile-top">
+        <span className="hardware-tile-icon" aria-hidden="true">{icon}</span>
+        <span className="hardware-tile-value">{pct}%</span>
+      </div>
       <strong>{label}</strong>
+      <div className="hardware-tile-track">
+        <div className="hardware-tile-fill" style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }
 
-export function HardwareBar({ label, value, unit = "%", tone = "red" }) {
+export function HardwareBar({ label, value, unit = "%", tone = "cyan", icon }) {
   const palette = {
-    red: "#b91c26",
-    orange: "#e07a1f",
-    green: "#12af64",
-    blue: "#2371f4",
+    red: "linear-gradient(90deg, #ef4444, #f87171)",
+    orange: "linear-gradient(90deg, #f59e0b, #fbbf24)",
+    green: "linear-gradient(90deg, #10b981, #34d399)",
+    blue: "linear-gradient(90deg, #3b82f6, #60a5fa)",
+    cyan: "linear-gradient(90deg, #06b6d4, #38bdf8)",
+    purple: "linear-gradient(90deg, #8b5cf6, #a78bfa)",
   };
-  const color = palette[tone] || palette.red;
+  const color = palette[tone] || palette.cyan;
   const pct = Math.max(0, Math.min(100, Number(value) || 0));
   return (
     <div className="hw-bar">
       <div className="hw-bar-head">
-        <span>{label}</span>
-        <strong>{value}{unit}</strong>
+        <span className="hw-bar-label">
+          {icon && <span className="hw-bar-icon" aria-hidden="true">{icon}</span>}
+          {label}
+        </span>
+        <strong className="hw-bar-val">{value}{unit}</strong>
       </div>
-      <span className="hw-bar-track">
-        <span className="hw-bar-fill" style={{ width: `${pct}%`, background: color }} />
-      </span>
+      <div className="hw-bar-track">
+        <div className="hw-bar-fill" style={{ width: `${pct}%`, background: color }} />
+      </div>
     </div>
   );
 }
@@ -182,8 +196,19 @@ export function HardwareStatus({ hw }) {
         <HardwareTile value={hw.gpu} label={t("hw.chip")} tone="pink" icon={<Brain />} />
       </div>
       <div className="hw-bars">
-        <HardwareBar label={t("hw.temp")} value={hw.temp} unit="°C" tone={hw.temp > 70 ? "red" : hw.temp > 55 ? "orange" : "green"} />
-        <HardwareBar label={t("hw.battery")} value={hw.battery} tone={hw.battery < 20 ? "red" : "blue"} />
+        <HardwareBar
+          icon={<Thermometer size={14} />}
+          label={t("hw.temp")}
+          value={hw.temp}
+          unit="°C"
+          tone={hw.temp > 70 ? "red" : hw.temp > 55 ? "orange" : "cyan"}
+        />
+        <HardwareBar
+          icon={<BatteryCharging size={14} />}
+          label={t("hw.battery")}
+          value={hw.battery}
+          tone={hw.battery < 20 ? "red" : hw.battery < 50 ? "orange" : "green"}
+        />
       </div>
       <div className="hw-meta">
         <div className="hw-meta-item">

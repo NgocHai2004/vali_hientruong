@@ -19,7 +19,7 @@
   --app-text-soft: #5e7294;
   --app-blue: #168bff;
   --app-purple: #5145f5;
-  --app-shadow: 0 10px 28px -16px rgba(36, 76, 120, .28);
+  --app-shadow: 0 0.625rem 1.75rem -1rem rgba(36, 76, 120, .28);
 }
 
 :root[data-app-theme="light"] body,
@@ -63,7 +63,7 @@
   color: var(--app-text) !important;
   background: linear-gradient(180deg, #ffffff, #f4f8fd) !important;
   border-color: var(--app-line-strong) !important;
-  box-shadow: 0 10px 24px -10px rgba(36, 76, 120, .28) !important;
+  box-shadow: 0 0.625rem 1.5rem -0.625rem rgba(36, 76, 120, .28) !important;
 }
 
 :root[data-app-theme="light"] .app .nav-item[data-tip]::after,
@@ -89,7 +89,7 @@
 
 :root[data-app-theme="light"] .app :is(.input, .control, textarea, select):focus {
   border-color: var(--app-blue) !important;
-  box-shadow: 0 0 0 3px rgba(22, 139, 255, .12) !important;
+  box-shadow: 0 0 0 0.1875rem rgba(22, 139, 255, .12) !important;
 }
 
 :root[data-app-theme="light"] .app option {
@@ -140,7 +140,7 @@
   color: var(--app-text) !important;
   background: #fff !important;
   border-color: var(--app-line) !important;
-  box-shadow: 0 24px 60px rgba(36, 76, 120, .22) !important;
+  box-shadow: 0 1.5rem 3.75rem rgba(36, 76, 120, .22) !important;
 }
 
 :root[data-app-theme="light"] .app :is(.modal-head, .session-modal-head, .session-modal-actions, .modal-actions) {
@@ -193,7 +193,7 @@
   color: var(--app-text) !important;
   background: #fff !important;
   border-color: var(--app-line) !important;
-  box-shadow: 0 18px 40px rgba(36, 76, 120, .20) !important;
+  box-shadow: 0 1.125rem 2.5rem rgba(36, 76, 120, .20) !important;
 }
 
 :root[data-app-theme="light"] .app :is(.smp-menu-pop > button, .smp-menu-pop > a, .smp-opt, .smp-sub-row, .smp-tr-row, .smp-mt-row) {
@@ -231,7 +231,7 @@
   color: #075fb8 !important;
   background: #dceeff !important;
   border-color: #75ade4 !important;
-  box-shadow: 0 0 0 3px rgba(22, 139, 255, .12) !important;
+  box-shadow: 0 0 0 0.1875rem rgba(22, 139, 255, .12) !important;
 }
 
 :root[data-app-theme="light"] .app .smp-act .smp-act-del {
@@ -246,7 +246,7 @@
   color: #9f1f3a !important;
   background: #ffe0e7 !important;
   border-color: #df7d91 !important;
-  box-shadow: 0 0 0 3px rgba(217, 54, 62, .10) !important;
+  box-shadow: 0 0 0 0.1875rem rgba(217, 54, 62, .10) !important;
 }
 
 :root[data-app-theme="light"] .app .smp-act button:disabled,
@@ -270,7 +270,7 @@
   color: #9f1f3a !important;
   background: #ffe0e7 !important;
   border-color: #df7d91 !important;
-  box-shadow: 0 0 0 3px rgba(217, 54, 62, .10) !important;
+  box-shadow: 0 0 0 0.1875rem rgba(217, 54, 62, .10) !important;
 }
 
 :root[data-app-theme="light"] .app .smp-panel-trace .smp-bulk-del:disabled,
@@ -396,7 +396,7 @@
   color: #fff !important;
   font-weight: 700 !important;
   background: linear-gradient(135deg, #168bff 0%, #5145f5 100%) !important;
-  box-shadow: 0 4px 12px rgba(46, 102, 235, 0.32) !important;
+  box-shadow: 0 0.25rem 0.75rem rgba(46, 102, 235, 0.32) !important;
 }
 
 :root[data-app-theme="light"] .app .scp-name {
@@ -412,4 +412,3 @@
   background: linear-gradient(90deg, #e4edf8 25%, #f2f7fc 37%, #e4edf8 63%) !important;
   background-size: 400% 100% !important;
 }
-
