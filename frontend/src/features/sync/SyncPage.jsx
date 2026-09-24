@@ -242,7 +242,7 @@ export function SyncPage() {
 
   return (
     <div className="page">
-      <PageHeader title={t("sync.title")} subtitle={t("sync.subtitle")} />
+      <PageHeader title={t("nav.sync")} subtitle={t("sync.subtitle")} />
 
       <div className="sync-toolbar">
         <input

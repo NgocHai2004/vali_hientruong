@@ -9,14 +9,15 @@ import { FINGER_LABELS } from "./sceneMatchDemo";
 import { SCORE_TOTAL, enrolledUrl } from "./sceneDemo";
 import {
   IcAvatar, IcCaret, IcChevRight, IcChevUp, IcCheckCircle, IcClose, IcExport, IcFilter,
-  IcEye, IcLayers, IcPageNext, IcPagePrev, IcPencil, IcPlus,
+  IcEye, IcLayers, IcPageNext, IcPagePrev, IcPencil,
   IcTick, IcTrash, IcUpload,
 } from "./sceneMatchIcons";
 
 // Man "Phan tich doi sanh" — dung theo design D:\Downloads\Phan tich doi sanh.
 // Vu an / ma phien / danh sach dau vet = data THAT tu API.
 // Ket qua doi sanh + ho so doi tuong = data gia (chua co engine trich minutiae).
-const PAGE_SIZE = 10;   // design: "Hien thi 1 - 10 cua 20"
+const PAGE_SIZE = 10;   // design: "Hien thi 1 - 10 cua 20" — tran tren; so hang thuc te theo chieu cao khung
+const ROW_MIN_PX = 44;  // phai bang min-height hang trong sceneMatch.css
 const MATCH_POLL_MS = 2000;
 const MATCH_POLL_TIMEOUT_MS = 10 * 60 * 1000;
 const MATCH_TERMINAL_STATUSES = new Set(["done", "error", "disabled"]);
@@ -68,6 +69,10 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [page, setPage] = useState(1);
+  // So hang/trang do theo chieu cao khung bang: vua khit thi khong co thanh cuon,
+  // hang nao khong vua duoc day sang trang sau (da co phan trang).
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const bodyRef = useRef(null);
   const [q, setQ] = useState("");
   const [advOpen, setAdvOpen] = useState(false);
   const [subjOpen, setSubjOpen] = useState(false);
@@ -200,6 +205,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           ? (String(fingerKey).startsWith("fp.") ? fingerKey : `fp.finger.${fingerKey}.long`)
           : "—";
         const trace = traces.find((item) => item.id === m.trace_id);
+        const det = allDetainees.find((d) => String(d.id || d._id || "") === String(m.detainee_id || m.suspect_id || ""));
         const score = Number.isFinite(Number(m.score)) ? Math.round(Number(m.score)) : 0;
         const percent = m.percent != null ? Number(m.percent) : score / 10;
         return {
@@ -207,7 +213,8 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           stt: String(idx + 1).padStart(2, "0"),
           code: m.trace_code || (trace ? traceCode(trace) : `DVHT-${String(m.trace_seq || idx + 1).padStart(4, "0")}`),
           name: m.name || m.detainee_name || m.subject || "—",
-          cccd: m.cccd || m.detainee_code || "—",
+          // detainee_code la ma ho so (CP00001), khong phai so CCCD -> khong fallback sang no.
+          cccd: det?.cccd_number || det?.cccd || m.cccd_number || m.cccd || "—",
           finger: fingerI18n,
           score,
           pct: `(${percent.toFixed(1)}%)`,
@@ -290,11 +297,23 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
       ? [...subjectSel][0]
       : t("smp.subj.n_picked", { n: subjectSel.size });
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const pageRows = useMemo(
-    () => rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [rows, page]
+    () => rows.slice((page - 1) * pageSize, page * pageSize),
+    [rows, page, pageSize]
   );
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const measure = () => {
+      const n = Math.floor(el.clientHeight / ROW_MIN_PX);
+      if (n > 0) setPageSize(Math.min(PAGE_SIZE, n));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   useEffect(() => { setPage(1); }, [q, subjectSel, fingerFilter, minScore, sortBy, bestOnly]);
   useEffect(() => {
     if (page > totalPages) {
@@ -509,8 +528,8 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
     }
   };
 
-  const from = rows.length ? (page - 1) * PAGE_SIZE + 1 : 0;
-  const to = Math.min(page * PAGE_SIZE, rows.length);
+  const from = rows.length ? (page - 1) * pageSize + 1 : 0;
+  const to = Math.min(page * pageSize, rows.length);
 
   // Chỉ liên kết bằng trace_id thật do backend trả về. Không ghép theo thứ tự,
   // vì cách đó khiến ảnh chưa có kết quả HBIE vẫn bị hiển thị như đã trùng khớp.
@@ -643,14 +662,6 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           onOpenDetainee={onOpenDetainee}
           onDelete={setPendingDeleteSubject}
           deletingId={deletingSubjectId}
-          // ponytail: chi chan theo status (co trong payload san). Backend con chan
-          // officer != user va role admin -> se bao 403 luc luu. Them officer vao
-          onAdd={onAddSubject && (!session || session.status === "open" || session.status === "investigating" || session.status === "active" || session.status !== "closed")
-            ? () => onAddSubject(session?.id || currentCaseId)
-            : null}
-          addDisabledHint={session && session.status === "closed"
-            ? t("smp.sub.add_closed")
-            : ""}
         />
       </div>
 
@@ -863,13 +874,13 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
           <div />
         </div>
 
-        <div className="smp-mt-body">
+        <div className="smp-mt-body" ref={bodyRef} style={{ "--smp-rows": pageSize }}>
           {loading && <div className="scene-empty smp-mt-status">{t("common.loading")}</div>}
           {!loading && pageRows.length === 0 && (
             <div className="scene-empty smp-mt-status">{t("smp.match.empty")}</div>
           )}
           {!loading && pageRows.map((r, i) => {
-            const globalIdx = (page - 1) * PAGE_SIZE + i;
+            const globalIdx = (page - 1) * pageSize + i;
             const it = traceFor(r);
             const open = it ? () => setFull({ id: it.id, row: r }) : undefined;
             const sttNumber = String(globalIdx + 1).padStart(2, "0");
@@ -924,7 +935,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
                 <div>
                   <span className="smp-chip smp-chip-green">{t("smp.matched")}</span>
                 </div>
-                <div className="smp-dim">{r.time}</div>
+                <div className="smp-dim smp-mt-time">{formatDateTime(r.time)}</div>
                 <div className="smp-mt-go" aria-hidden="true"><IcChevRight /></div>
               </div>
             );
@@ -957,7 +968,7 @@ export default function SceneMatchPage({ sessionId, caseId, onBack, onAddSubject
             ><IcPageNext /></button>
           </div>
           <div className="smp-pg-right">
-            <span className="smp-dim">{t("smp.per_page", { n: PAGE_SIZE })}</span>
+            <span className="smp-dim">{t("smp.per_page", { n: pageSize })}</span>
             <span className="smp-dim">
               {t("smp.showing", { from, to, total: rows.length })}
             </span>
@@ -1379,7 +1390,7 @@ function TraceEditModal({ t, item, code, onClose, onSave }) {
 
 /* ---------- Panel: HỒ SƠ ĐỐI TƯỢNG (data giả) ---------- */
 function SubjectPanel({
-  t, subjects, openSub, setOpenSub, onOpenDetainee, onDelete, deletingId, onAdd, addDisabledHint,
+  t, subjects, openSub, setOpenSub, onOpenDetainee, onDelete, deletingId,
 }) {
   const total = subjects.length;
   const crossCount = subjects.filter((s) => s.is_cross_case).length;
@@ -1400,15 +1411,6 @@ function SubjectPanel({
             {" • "}{t("smp.sub.photos", { n: photos })}
           </span>
         </div>
-        <div className="smp-panel-tools">
-          <button
-            type="button"
-            className="smp-btn-primary"
-            onClick={onAdd || undefined}
-            disabled={!onAdd}
-            title={addDisabledHint || undefined}
-          ><IcPlus />{t("smp.sub.add")}</button>
-        </div>
       </div>
 
       <div className="smp-sub-list">
@@ -1424,7 +1426,7 @@ function SubjectPanel({
                 </div>
                 <div className="smp-sub-info">
                   <div className="smp-top-line">
-                    <span className="smp-strong">{s.name}</span>
+                    <span className="smp-strong" title={s.name}>{s.name}</span>
                     {s.primary && (
                       <span className="smp-chip smp-chip-blue">{t("smp.sub.primary")}</span>
                     )}
@@ -1503,7 +1505,7 @@ function SubjectPanel({
                   </div>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span className="smp-strong">{s.name}</span>
+                      <span className="smp-strong" title={s.name}>{s.name}</span>
                       {s.is_cross_case && (
                         <span
                           className="smp-chip smp-chip-purple"

@@ -3,6 +3,7 @@ import { api } from "./api";
 import { useI18n } from "./i18n";
 import CaseFormModal from "./CaseFormModal";
 import Button from "./components/Button";
+import { PageHeader } from "./components/common/CommonUI";
 import {
   IcChevRight, IcInfo, IcPencil, IcPlus,
   IcReanalyze, IcSearch, IcTrash,
@@ -105,58 +106,54 @@ export default function CasesPage({ role = "user", onPick, onOpenCase }) {
 
   return (
     <div className="scp">
-      <section className="smp-panel smp-panel-match">
-        <div className="smp-panel-head">
-          <div className="smp-panel-title">
-            <span className="smp-h">{t("case.title")}</span>
-            <span className="smp-badge">{total}</span>
-            <span className="smp-sub">{t("case.cases")}</span>
-          </div>
-          <div className="smp-panel-tools">
-            {/* Ô tìm kiếm có icon bên trong, đúng .smp-field của màn đối sánh. */}
-            <div className="smp-field smp-field-wide">
-              <IcSearch />
-              <input
-                type="search"
-                value={qLive}
-                onChange={(e) => setQLive(e.target.value)}
-                placeholder={t("case.search_ph")}
-                aria-label={t("common.search")}
-              />
-            </div>
-            <div className="scp-seg" role="group" aria-label={t("case.filter_label")}>
-              {STATUSES.map(([v, key]) => (
-                <button
-                  key={v || "all"}
-                  type="button"
-                  className={statusFilter === v ? "on" : ""}
-                  aria-pressed={statusFilter === v}
-                  onClick={() => setStatusFilter(v)}
-                >
-                  {t(key)}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="smp-icon-btn scp-refresh"
-              onClick={load}
-              disabled={loading}
-              aria-label={t("common.refresh")}
-              title={t("common.refresh")}
-            >
-              <IcReanalyze />
-            </button>
-            {!isAdmin && (
-              <Button className="scp-new" startIcon={<IcPlus />} onClick={() => setForm({})}>
-                {t("case.new")}
-              </Button>
-            )}
-          </div>
+      {/* Phần đầu dựng đúng khuôn trang Danh sách nghi phạm: tiêu đề + dòng tổng
+          nằm ngoài, thanh lọc là một thẻ riêng, bảng là thẻ thứ ba. */}
+      <PageHeader title={t("nav.scene_traces")} subtitle={`${t("case.total", { n: total })} · ${t("case.sub")}`}>
+        {!isAdmin && (
+          <Button className="scp-new" startIcon={<IcPlus />} onClick={() => setForm({})}>
+            {t("case.new")}
+          </Button>
+        )}
+      </PageHeader>
+
+      <div className="scp-filter">
+        {/* Ô tìm kiếm có icon bên trong, đúng .smp-field của màn đối sánh. */}
+        <div className="smp-field scp-search">
+          <IcSearch />
+          <input
+            type="search"
+            value={qLive}
+            onChange={(e) => setQLive(e.target.value)}
+            placeholder={t("case.search_ph")}
+            aria-label={t("common.search")}
+          />
         </div>
+        <div className="scp-seg" role="group" aria-label={t("case.filter_label")}>
+          {STATUSES.map(([v, key]) => (
+            <button
+              key={v || "all"}
+              type="button"
+              className={statusFilter === v ? "on" : ""}
+              aria-pressed={statusFilter === v}
+              onClick={() => setStatusFilter(v)}
+            >
+              {t(key)}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="smp-icon-btn scp-refresh"
+          onClick={load}
+          disabled={loading}
+          aria-label={t("common.refresh")}
+          title={t("common.refresh")}
+        >
+          <IcReanalyze />
+        </button>
+      </div>
 
-        <div className="smp-sub scp-hint">{t("case.sub")}</div>
-
+      <section className="smp-panel smp-panel-match">
         {err && <div className="lg-err" role="alert">{err}</div>}
 
         <div className="scp-wrap">

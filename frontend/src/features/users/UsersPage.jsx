@@ -47,7 +47,7 @@ export function UserForm({ initial, onClose, onSaved }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal small-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal small-modal user-form-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{isEdit ? t("userform.title.edit", { u: initial.username }) : t("userform.title.new")}</h3>
           <button onClick={onClose}>×</button>
@@ -152,7 +152,7 @@ export function UsersPage({ currentUser }) {
 
   return (
     <div className="page">
-      <PageHeader title={t("users.title")} subtitle={t("users.subtitle", { n: users.length })}>
+      <PageHeader title={t("nav.users")} subtitle={t("users.subtitle", { n: users.length })}>
         <button className="button primary" onClick={() => { setEditing(null); setShowForm(true); }}>
           {Icon.plus}
           {t("users.add")}
@@ -201,7 +201,7 @@ export function UsersPage({ currentUser }) {
                     <td><strong>{u.username}</strong></td>
                     <td>{u.full_name || "-"}</td>
                     <td>
-                      <span className={`status-badge ${u.role === "admin" ? "delete" : "create"}`}>
+                      <span className={`status-badge ${u.role === "admin" ? "role-admin" : "role-officer"}`}>
                         {u.role === "admin" ? t("common.role.admin") : t("common.role.officer")}
                       </span>
                     </td>

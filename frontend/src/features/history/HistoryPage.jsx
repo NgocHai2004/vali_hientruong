@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { api } from "../../api";
 import { useI18n } from "../../i18n";
-import { StateBox } from "../../components/common/CommonUI";
+import { PageHeader, StateBox } from "../../components/common/CommonUI";
+import DateTimeInput from "../../components/common/DateTimeInput";
 import DetailModal from "../../components/modals/DetailModal";
 import SyncLogDetailModal from "../../components/modals/SyncLogDetailModal";
 
@@ -164,13 +165,13 @@ export function DetaineeHistoryView({ onEdit }) {
           <div className="report-filter-grid">
             <label className="report-field">
               <span>{t("common.from")}</span>
-              <input className="control" type="datetime-local"
-                value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <DateTimeInput className="control"
+                value={dateFrom} onChange={setDateFrom} />
             </label>
             <label className="report-field">
               <span>{t("common.to")}</span>
-              <input className="control" type="datetime-local"
-                value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              <DateTimeInput className="control"
+                value={dateTo} onChange={setDateTo} />
             </label>
             <label className="report-field">
               <span>{t("logs.field.action")}</span>
@@ -360,20 +361,18 @@ export function SyncHistoryView() {
           <div className="report-filter-grid">
             <label className="report-field">
               <span>{t("common.from")}</span>
-              <input
+              <DateTimeInput
                 className="control"
-                type="datetime-local"
                 value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={setDateFrom}
               />
             </label>
             <label className="report-field">
               <span>{t("common.to")}</span>
-              <input
+              <DateTimeInput
                 className="control"
-                type="datetime-local"
                 value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={setDateTo}
               />
             </label>
             <label className="report-field">
@@ -492,34 +491,31 @@ export function HistoryPage({ onEdit, initialTab = "detainee" }) {
   return (
     <div className="page report-page">
       <div className="report-fixed">
-        <div className="page-header" style={{ alignItems: "center", gap: 16 }}>
-          <div>
-            <h1>{t("history.title")}</h1>
-            <p>{tab === "detainee" ? t("history.subtitle") : t("logs.subtitle_sync")}</p>
+        <PageHeader
+          title={t("nav.detainee_history")}
+          subtitle={tab === "detainee" ? t("history.subtitle") : t("logs.subtitle_sync")}
+        >
+          <div className="scp-seg" role="tablist" aria-label={t("history.title")}>
+            <button
+              type="button"
+              className={tab === "detainee" ? "on" : ""}
+              onClick={() => setTab("detainee")}
+              role="tab"
+              aria-selected={tab === "detainee"}
+            >
+              {t("history.tab.detainee")}
+            </button>
+            <button
+              type="button"
+              className={tab === "sync" ? "on" : ""}
+              onClick={() => setTab("sync")}
+              role="tab"
+              aria-selected={tab === "sync"}
+            >
+              {t("history.tab.sync")}
+            </button>
           </div>
-          <div className="page-header-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div className="scp-seg" role="tablist" aria-label={t("history.title")}>
-              <button
-                type="button"
-                className={tab === "detainee" ? "active" : ""}
-                onClick={() => setTab("detainee")}
-                role="tab"
-                aria-selected={tab === "detainee"}
-              >
-                {t("history.tab.detainee")}
-              </button>
-              <button
-                type="button"
-                className={tab === "sync" ? "active" : ""}
-                onClick={() => setTab("sync")}
-                role="tab"
-                aria-selected={tab === "sync"}
-              >
-                {t("history.tab.sync")}
-              </button>
-            </div>
-          </div>
-        </div>
+        </PageHeader>
       </div>
 
       {tab === "detainee" ? (

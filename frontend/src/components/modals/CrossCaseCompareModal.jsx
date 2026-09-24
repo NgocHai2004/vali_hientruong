@@ -102,7 +102,7 @@ export function CrossCaseCompareModal({
 
         <div className="form" style={{ paddingTop: 6, gap: 12 }}>
           <div className="info-box" style={{ margin: 0, padding: "8px 12px", fontSize: 13, background: "rgba(53, 216, 255, 0.08)", border: "1px solid rgba(53, 216, 255, 0.22)", borderRadius: 8 }}>
-            💡 {t("smp.cross_case.hint") || "Dữ liệu nghi phạm từ các vụ án được chọn chỉ dùng để so khớp tạm thời, KHÔNG chuyển đối tượng vào vụ án này."}
+            {t("smp.cross_case.hint") || "Dữ liệu nghi phạm từ các vụ án được chọn chỉ dùng để so khớp tạm thời, KHÔNG chuyển đối tượng vào vụ án này."}
           </div>
 
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -178,9 +178,9 @@ export function CrossCaseCompareModal({
                           </span>
                         </div>
                         <div style={{ fontSize: 12, color: "var(--muted)", display: "flex", gap: 12 }}>
-                          {c.location && <span>📍 {c.location}</span>}
-                          {c.occurred_at && <span>🕒 {formatDateTime(c.occurred_at)}</span>}
-                          <span>👥 {t("dashboard.case.record_count", { n: c.detainee_count || 0 })}</span>
+                          {c.location && <span>{c.location}</span>}
+                          {c.occurred_at && <span>{formatDateTime(c.occurred_at)}</span>}
+                          <span>{t("dashboard.case.record_count", { n: c.detainee_count || 0 })}</span>
                         </div>
                       </div>
                     </label>

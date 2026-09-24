@@ -156,8 +156,8 @@ export function SettingsPage() {
   });
 
   return (
-    <div className="page">
-      <PageHeader title={t("settings.title")} subtitle={t("settings.subtitle")} />
+    <div className="page settings-page">
+      <PageHeader title={t("nav.settings")} subtitle={t("settings.subtitle")} />
 
       {error && <StateBox type="error">{error}</StateBox>}
 
@@ -176,7 +176,7 @@ export function SettingsPage() {
                   <p>{t("settings.hbie.desc", { max: scoreMax })}</p>
                 </div>
                 <button type="submit" className="button primary" disabled={hbieSaving || !pairOk}>
-                  {hbieSaving ? t("common.saving") : t("common.save")}
+                  {hbieSaving ? t("common.saving") : t("settings.hbie.save")}
                 </button>
               </div>
               {hbieError && <StateBox type="error">{hbieError}</StateBox>}
@@ -216,7 +216,7 @@ export function SettingsPage() {
                   <div className="modal-actions" style={{ marginTop: 0 }}>
                     <button
                       type="button"
-                      className="button"
+                      className="button settings-reset-btn"
                       onClick={resetHbie}
                       disabled={hbieSaving || !hbie?.defaults}
                     >
@@ -275,7 +275,7 @@ export function SettingsPage() {
                   <p>{t("settings.fp.min_quality.desc", { v: FP_QUALITY_RECOMMENDED })}</p>
                 </div>
                 <button type="submit" className="button primary" disabled={fpSaving}>
-                  {fpSaving ? t("common.saving") : t("common.save")}
+                  {fpSaving ? t("common.saving") : t("settings.fp.save")}
                 </button>
               </div>
               {fpError && <StateBox type="error">{fpError}</StateBox>}

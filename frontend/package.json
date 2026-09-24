@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "check:i18n": "node scripts/check-i18n.mjs",
+    "prebuild": "npm run check:i18n",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"

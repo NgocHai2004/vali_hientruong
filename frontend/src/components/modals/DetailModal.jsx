@@ -1,6 +1,7 @@
 import React from "react";
 import { useI18n } from "../../i18n";
 import { InfoTile } from "../common/CommonUI";
+import Button from "../Button";
 
 export const DetailIcon = {
   cccd: (
@@ -86,7 +87,7 @@ export function DetailModal({ detainee, onClose, onEdit }) {
           <div className="detail-header-left">
             <span className="detail-header-icon">{DetailIcon.cccd}</span>
             <div>
-              <h3>{t("detainee.detail.title", { code: d.code || d.personal_id || "" })}</h3>
+              <h3>{t("detainee.detail.title", { code: d.personal_id || d.code || "" })}</h3>
               <small>{t("detainee.detail.subtitle")}</small>
             </div>
           </div>
@@ -119,6 +120,14 @@ export function DetailModal({ detainee, onClose, onEdit }) {
             <InfoTile icon={DetailIcon.home} label={t("detainee.field.hometown")} value={d.hometown || "—"} />
           </div>
         </div>
+
+        {onEdit && (
+          <div className="detail-footer">
+            <Button endIcon={<span>→</span>} onClick={() => { onClose(); onEdit(d); }}>
+              {t("detainee.detail.open_full")}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -24,6 +24,8 @@
   height: 100%;
   min-height: 32.5rem;
   overflow: hidden;
+  /* Lề trang giống .page (tab Lịch sử, Hồ sơ...). */
+  padding: 1.25rem 1.5rem 2.5rem;
 }
 
 .smp-top {
@@ -1196,6 +1198,8 @@ label.smp-drop.on {
   min-height: 26.25rem;
   /* thấp hơn .smp vì chỉ có 1 panel */
   min-width: 0;
+  /* Lề trang giống .page (tab Lịch sử, Hồ sơ...). */
+  padding: 1.25rem 1.5rem 2.5rem;
 }
 
 .scp .smp-panel-match {
@@ -1211,6 +1215,31 @@ label.smp-drop.on {
 
 .scp .smp-panel-tools {
   gap: 0.625rem;
+}
+
+/* Trang Vụ án (CasesPage): tiêu đề + thanh lọc dựng như trang Danh sách nghi
+   phạm — .page-header ngoài thẻ, thanh lọc là thẻ riêng (cùng viền/bo/nền với
+   .filter-bar), bảng là thẻ thứ ba. */
+.scp > .page-header {
+  margin-bottom: 0.75rem;
+}
+
+.scp-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+  margin-bottom: 0.75rem;
+  padding: 0.875rem 1.125rem;
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  background: var(--bg-panel);
+}
+
+.scp-search {
+  flex: 1 1 16.25rem;
+  min-width: 0;
 }
 
 /* Segmented cua man Chon vu an: truoc dung lai .smp-viewtoggle (nut chuyen
@@ -3784,7 +3813,7 @@ textarea.smp-modal-in {
 .smp-mt-head,
 .smp-mt-row {
   grid-template-columns:
-    3.5rem 1.25fr 4.625rem 1.55fr 1.3fr 1.6fr 1.15fr 1.05fr 1.35fr 2.5rem;
+    3.5rem 1.25fr 6.5rem 1.55fr 1.3fr 1.6fr 1.15fr 1.05fr 1.35fr 2.5rem;
   align-items: stretch;
   gap: 0;
 }
@@ -3865,6 +3894,12 @@ textarea.smp-modal-in {
 
 .smp-mt-row> :nth-child(9) {
   font-size: 0.7812rem;
+  white-space: nowrap;
+}
+
+/* Hang toi thieu 44px (touch target) */
+.smp-mt-row {
+  min-height: 2.75rem;
 }
 
 .smp-thumb-sm {
@@ -3882,7 +3917,7 @@ textarea.smp-modal-in {
      cuoi chi con 2 hang thi bang giu nguyen khung 10 hang (8 o trong) thay vi
      co lai. grid-auto-rows khong lam duoc viec nay: no chi sinh track khi co
      item. minmax de hang cao hon 2.1875rem neu chu xuong dong. */
-  grid-template-rows: repeat(10, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--smp-rows, 10), minmax(2.75rem, 1fr));
   /* flex:1 + min-height:0, KHONG phai 0 0 auto: panel .smp-panel-match cao co
      dinh (flex:1 1 0 do .smp chia) nen bang phai co lai duoc. De 0 0 auto thi
      bang 10 hang day .smp-pg xuong duoi day panel va overflow:hidden cat mat no
@@ -4098,7 +4133,8 @@ textarea.smp-modal-in {
 /* Bang 10 hang phai vua trong khung: mt-head 46 + 10 hang. Sàn 0 cho track co
    lai het thay vi tran 0.1875rem roi bi overflow cat mat mep hang 10. */
 .smp-panel-match .smp-mt-body {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .smp-panel-match .smp-mt-row>* {
@@ -4233,4 +4269,32 @@ textarea.smp-modal-in {
   height: 100%;
   border: none;
   background: #ffffff;
+}
+/* Thẻ hồ sơ đối tượng: dòng 1 = nhãn (Đối tượng chính / Liên vụ), dòng 2 = tên. */
+.smp-sub-info .smp-top-line {
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 0.3125rem;
+}
+
+.smp-sub-info .smp-top-line > .smp-strong {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Bang rong / dang tai: KHONG dung khung 10 hang. Khung 10 hang toi thieu 44px moi
+   hang cao hon vung nhin cua panel => body cuon duoc va thong bao "Khong co ket
+   qua" (dat giua 10 hang) roi xuong duoi, phai cuon moi thay. Khi chi co thong bao
+   thi body la 1 hang duy nhat vua khung, khong cuon. */
+.smp-panel-match .smp-mt-body:has(> .smp-mt-status) {
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+}
+
+/* Khong con thanh cuon: so hang/trang do theo chieu cao khung (SceneMatchPage),
+   hang khong vua thi sang trang sau. */
+.smp-panel-match .smp-mt-body {
+  overflow: hidden;
 }

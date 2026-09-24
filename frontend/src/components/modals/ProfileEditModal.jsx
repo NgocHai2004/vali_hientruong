@@ -45,7 +45,7 @@ export default function ProfileEditModal({ username, fullName, onClose, onSaved 
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal small-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal small-modal user-form-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{t("profile.title")}</h3>
           <button onClick={onClose}>×</button>

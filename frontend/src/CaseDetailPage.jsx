@@ -218,7 +218,11 @@ export default function CaseDetailPage({ caseId, role, onBack, onAddDetainee, on
             {(caseDoc.detainees || []).length === 0 && (
               <tr>
                 <td colSpan={8} className="session-list-empty">
-                  {isOpen ? t("case.detail.empty_open") : t("case.detail.empty_closed")}
+                  {!isOpen
+                    ? t("case.detail.empty_closed")
+                    : isAdmin
+                      ? t("case.detail.empty_open_readonly")
+                      : t("case.detail.empty_open")}
                 </td>
               </tr>
             )}

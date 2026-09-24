@@ -2500,6 +2500,14 @@
   .detail-close:hover { background: var(--bg-panel); color: var(--text); }
   .detail-close svg { width: 1.125rem; height: 1.125rem; }
 
+  .detail-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.875rem 1.5rem;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
   .detail-body {
     display: grid;
     grid-template-columns: 18.75rem minmax(0, 1fr);
@@ -4716,6 +4724,17 @@
   th { background: rgba(22, 139, 255, .08) !important; color: var(--primary-2) !important; }
   tbody tr:hover { background: rgba(53, 216, 255, .05) !important; }
   .row-actions button { color: var(--primary-2) !important; border-color: var(--border) !important; }
+  /* Nút Xoá: đỏ, cách xa Xem/Sửa để không bấm nhầm */
+  .row-actions .danger-text {
+    color: var(--danger) !important;
+    border-color: var(--danger) !important;
+    background: color-mix(in srgb, var(--danger) 12%, transparent) !important;
+    margin-left: 0.625rem;
+  }
+  .row-actions .danger-text:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger) 24%, transparent) !important;
+  }
+  .row-actions .danger-text:disabled { opacity: 0.4; cursor: not-allowed; }
   .pagination button { color: var(--primary-2) !important; border-color: var(--border) !important; }
 
   /* Stat card accent */
@@ -5653,3 +5672,157 @@
     .sidebar-logout,
     .sidebar-logout-label { transition: none !important; }
   }
+
+  /* ============ Tong quan: khong vo bo cuc o ~1024px ============ */
+  /* Loi cat chu: dong nao cung 1 hang, dai qua thi ellipsis (title co full text). */
+  .dash-hero > div:first-child { min-width: 0; }
+  .dash-hero h1 {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .session-line { min-width: 0; overflow: hidden; white-space: nowrap; }
+  .session-line strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .session-line small { flex: 0 0 auto; }
+  .session-meta { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .session-status,
+  .dash-detainee-badge { flex: 0 0 auto; white-space: nowrap; }
+
+  @media (max-width: 1180px), (max-height: 800px) {
+    /* Man hep/thap: khong ep panel vao vua khung nhin, cho cuon doc trang. */
+    .app.dashboard-active .content { overflow-x: hidden; overflow-y: auto; }
+    .app.dashboard-active .dashboard-page {
+      height: auto;
+      min-height: 100%;
+      overflow: visible;
+    }
+    .app.dashboard-active .dashboard-page .dashboard-body {
+      flex: 0 0 auto;
+      grid-template-rows: 14rem 14rem 17rem;
+    }
+  }
+
+  @media (max-width: 1180px) {
+    /* Loi chao 1 dong: cot trai co gian, cot phai theo noi dung. */
+    .app.dashboard-active .dashboard-page .dash-hero {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+    }
+    .app.dashboard-active .dashboard-page .dash-hero h1 { font-size: 1.0625rem; }
+    .app.dashboard-active .dash-hero-session .button,
+    .app.dashboard-active .dash-hero-session .dashboard-primary-action { min-width: 9.5rem; }
+  }
+
+  /* Tooltip sidebar: chi hien khi thuc su dung lai (tranh nhay de len noi dung khi lia chuot ngang qua). */
+  .nav-item[data-tip]:hover::before,
+  .nav-item[data-tip]:hover::after,
+  .sidebar-account[data-tip]:hover::before,
+  .sidebar-account[data-tip]:hover::after,
+  .sidebar-logout[data-tip]:hover::before,
+  .sidebar-logout[data-tip]:hover::after { transition-delay: 0.4s; }
+  .nav-item[data-tip]::before,
+  .sidebar-account[data-tip]::before,
+  .sidebar-logout[data-tip]::before {
+    background: #0b1d3b;
+    box-shadow: 0 0.625rem 1.625rem -0.375rem rgba(2, 8, 23, .95), 0 0 0 1px rgba(2, 8, 23, .6);
+  }
+  .app[data-dashboard-theme="light"] .nav-item[data-tip]::before,
+  .app[data-dashboard-theme="light"] .sidebar-account[data-tip]::before,
+  .app[data-dashboard-theme="light"] .sidebar-logout[data-tip]::before { background: #fff; }
+
+/* --- Tong quan: the tong hop + khung chao phang (dat o day vi dashboard.css nap SAU styles.css, cung do dac hieu thi file sau thang) --- */
+/* ============================================================
+   The tong hop trang Tong quan: bo cho giong the thong ke trang Lich su
+   (.report-stat) - nen phang, vien manh, vach mau 4px ben trai, icon o mau nhat.
+   Bo: nen gradient toa tron theo tung mau, vien mau, chu nhan mau, icon gradient
+   trang co bong phat sang, vet sang chay o mep tren, ky hieu trang tri "⌁".
+   Dat CUOI file voi cung do dac hieu (.app.dashboard-active ...) de thang khoi
+   dashboard.css o tren.
+   ============================================================ */
+.app.dashboard-active .dashboard-page .stat-card,
+.app.dashboard-active .dashboard-page .stat-card:hover {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-left: 0.25rem solid var(--accent);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow, none);
+}
+.app.dashboard-active .dashboard-page .stat-card:hover { transform: none; }
+.app.dashboard-active .dashboard-page .stat-card.clickable:hover { border-color: rgba(53, 216, 255, 0.35); border-left-color: var(--accent); }
+.app.dashboard-active .stat-card::after { display: none; }
+
+/* Mau: chi giu 4 sac trung voi trang Lich su (tim -> cyan, cam/xanh la nhu cu). */
+.app.dashboard-active .stat-card.blue   { --accent: #168BFF; --soft: rgba(22, 139, 255, 0.16); }
+.app.dashboard-active .stat-card.purple { --accent: #35D8FF; --soft: rgba(53, 216, 255, 0.16); }
+.app.dashboard-active .stat-card.orange { --accent: #ffb020; --soft: rgba(255, 176, 32, 0.16); }
+.app.dashboard-active .stat-card.green  { --accent: #24d777; --soft: rgba(36, 215, 119, 0.16); }
+
+.app.dashboard-active .stat-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  color: var(--accent);
+  background: var(--soft);
+  box-shadow: none;
+}
+.app.dashboard-active .stat-icon svg { width: 1.375rem; height: 1.375rem; }
+.app.dashboard-active .stat-content > span {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03rem;
+}
+.app.dashboard-active .stat-content strong { font-size: 1.625rem; line-height: 1.1; }
+/* Ky hieu trang tri o cac the khong co bieu do: bo. Bieu do that (.stat-extra) giu. */
+.app.dashboard-active .stat-card > .sparkline { display: none; }
+.app.dashboard-active .stat-card .stat-extra { opacity: 0.8; }
+
+/* Khong vet sang / dai mau cheo tren the tong hop va khung chao (trang Tong quan).
+   - .stat-card::after: vet sang chay o mep tren (animation stat-trail) - tat han.
+   - .dash-hero::before: dai gradient tim cheo phia sau loi chao - bo.
+   Nen khung chao ve phang nhu the thong ke ben duoi. */
+.app.dashboard-active .stat-card::after,
+.stat-card::after {
+  content: none;
+  display: none;
+  animation: none;
+}
+.app.dashboard-active .dashboard-page .dash-hero::before,
+.app.dashboard-active .dashboard-page .dash-hero::after {
+  content: none;
+  display: none;
+  animation: none;
+}
+.app.dashboard-active .dashboard-page .dash-hero,
+.app.dashboard-active .dash-hero {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow, none);
+}
+
+.app.dashboard-active[data-dashboard-theme="light"] .stat-icon { color: var(--accent); }
+
+/* --- Tong quan: khoi "Trang thai vali thu nhan" phang, mot mau nhan --- */
+/* 4 o CPU/RAM/O dia/Chip AI: bo bon mau rieng (xanh la/tim/xanh duong/hong), bo nen
+   toa tron, bong phat sang va icon gradient. Tat ca dung mot mau nhan (cyan) nhu
+   the thong ke; muc do do bang thanh tien do, khong bang mau. */
+.hardware-tile,
+.hardware-tile-green,
+.hardware-tile-purple,
+.hardware-tile-blue,
+.hardware-tile-pink { --hardware-color: #35D8FF; }
+.app.dashboard-active .hardware-tile {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.app.dashboard-active .hardware-tile-icon {
+  color: var(--hardware-color);
+  background: rgba(53, 216, 255, 0.14);
+  box-shadow: none;
+}
+.app.dashboard-active .hardware-tile-value { color: var(--text); }
+.app.dashboard-active .hardware-tile-fill { box-shadow: none; }
+.app.dashboard-active .dashboard-page .hw-bar-fill { box-shadow: none; }
+.app.dashboard-active[data-dashboard-theme="light"] .hardware-tile-icon { color: #0a6fd6; background: rgba(22, 139, 255, 0.12); }

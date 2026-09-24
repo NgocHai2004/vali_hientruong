@@ -235,7 +235,7 @@ export default function SceneTraceFull({ item, row = {}, session, detainees = []
     [t("scene.match.finger"), fingerLabel],
     [t("scene.match.subject"), subjectLabel],
     [t("scene.match.place"), session?.location || m.place],
-    [t("scene.match.at"), safeRow.time || m.analyzed_at],
+    [t("scene.match.at"), fmt(safeRow.time || m.analyzed_at)],
     [t("scene.match.by"), item.created_by || m.analyst],
   ];
 

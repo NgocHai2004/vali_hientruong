@@ -87,7 +87,7 @@ export function DetaineesPage({ onEdit }) {
 
   return (
     <div className="page">
-      <PageHeader title={t("detainee.list.title")} subtitle={t("detainee.list.total", { n: total })} />
+      <PageHeader title={t("nav.detainees")} subtitle={t("detainee.list.total", { n: total })} />
 
       <form className="filter-bar" onSubmit={handleSearchSubmit}>
         <input

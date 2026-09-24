@@ -158,12 +158,12 @@ export function HardwareTile({ value, label, tone, icon }) {
 
 export function HardwareBar({ label, value, unit = "%", tone = "cyan", icon }) {
   const palette = {
-    red: "linear-gradient(90deg, #ef4444, #f87171)",
-    orange: "linear-gradient(90deg, #f59e0b, #fbbf24)",
-    green: "linear-gradient(90deg, #10b981, #34d399)",
-    blue: "linear-gradient(90deg, #3b82f6, #60a5fa)",
-    cyan: "linear-gradient(90deg, #06b6d4, #38bdf8)",
-    purple: "linear-gradient(90deg, #8b5cf6, #a78bfa)",
+    red: "#ef4444",
+    orange: "#f59e0b",
+    green: "#24d777",
+    blue: "#3b82f6",
+    cyan: "#35d8ff",
+    purple: "#8b5cf6",
   };
   const color = palette[tone] || palette.cyan;
   const pct = Math.max(0, Math.min(100, Number(value) || 0));
@@ -207,7 +207,7 @@ export function HardwareStatus({ hw }) {
           icon={<BatteryCharging size={14} />}
           label={t("hw.battery")}
           value={hw.battery}
-          tone={hw.battery < 20 ? "red" : hw.battery < 50 ? "orange" : "green"}
+          tone={hw.battery < 20 ? "red" : hw.battery < 50 ? "orange" : "cyan"}
         />
       </div>
       <div className="hw-meta">
@@ -313,7 +313,7 @@ export function DashboardHome({ go, isAdmin = false, fullName = "" }) {
     <div className="page dashboard-page">
       <div className="dash-hero">
         <div>
-          <h1>{greet}, {fullName || t("dashboard.greet_officer_default")} <span className="dash-hero-wave" aria-hidden="true">👋</span></h1>
+          <h1 title={`${greet}, ${fullName || t("dashboard.greet_officer_default")}`}>{greet}, {fullName || t("dashboard.greet_officer_default")} <span className="dash-hero-wave" aria-hidden="true">👋</span></h1>
           <p>{timeStr} • {dateStr}</p>
           <span className="dash-hero-motto">{locale === "en" ? "Have a productive day!" : "Hôm nay là một ngày làm việc hiệu quả!"}</span>
         </div>
