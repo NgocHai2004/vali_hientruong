@@ -1123,8 +1123,16 @@ async def generate_scene_report_pdf(
     page = await browser.new_page()
     try:
         await page.set_content(html_content, wait_until="networkidle")
-        # @page { size: A4 portrait; margin: 0 } trong html report -> giu nguyen bang CSS.
-        await page.pdf(path=pdf_path, print_background=True, prefer_css_page_size=True)
+        # Khai bao tuong minh A4 + margin 0 thay vi de trinh duyet tu doc CSS @page:
+        # prefer_css_page_size phu thuoc vao tung ban Chrome/Edge co ho tro CSS Paged
+        # Media dung hay khong (may khac dung Chrome thay Edge da ra khac A4).
+        await page.pdf(
+            path=pdf_path,
+            print_background=True,
+            format="A4",
+            landscape=False,
+            margin={"top": "0", "right": "0", "bottom": "0", "left": "0"},
+        )
     except Exception as e:
         raise RuntimeError(f"Lỗi khi Chromium tạo PDF: {e}")
     finally:
