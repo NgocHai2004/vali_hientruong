@@ -473,6 +473,35 @@ export default function SceneMatchReportModal({
 
     let isCancelled = false;
 
+    const finishWithPdf = async (reportId, status) => {
+      const fname = status.filename || reportFileName(session?.code || singleMatch?.report_code || "vuan");
+      setFileName(fname);
+      setProgressText("Đang tải dữ liệu PDF hiển thị...");
+
+      const { blob } = await casesApi.fetchSceneReportPdfBlob(reportId, fname);
+      if (isCancelled) return;
+
+      const objUrl = URL.createObjectURL(blob);
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+      urlRef.current = objUrl;
+
+      setPdfBlob(blob);
+      setPdfUrl(objUrl);
+      setLoading(false);
+
+      if (initialAction === "download") {
+        const a = document.createElement("a");
+        a.href = objUrl;
+        a.download = fname;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setMsg(t("pdf.download_success") || "Đã tải file PDF thành công!");
+      } else if (initialAction === "usb") {
+        handleSaveToUsb(blob, fname);
+      }
+    };
+
     casesApi.generateSceneReport({
       caseId,
       scope,
@@ -482,13 +511,21 @@ export default function SceneMatchReportModal({
       const reportId = genRes.report_id;
       if (!reportId) throw new Error("Không nhận được mã báo cáo từ máy chủ");
 
+      // Cache hit (data_hash không đổi): server tra ve completed ngay, khoi cho vong poll.
+      if (genRes.status === "completed") {
+        await finishWithPdf(reportId, genRes);
+        return;
+      }
+
       let done = false;
       let attempts = 0;
-      const maxAttempts = 30;
+      const maxAttempts = 35;
+      let pollDelay = 400; // poll nhanh luc dau, tang dan de do doi request khi cho lau
 
       while (!isCancelled && !done && attempts < maxAttempts) {
         attempts++;
-        await new Promise((r) => setTimeout(r, 1200));
+        await new Promise((r) => setTimeout(r, pollDelay));
+        pollDelay = Math.min(pollDelay * 1.5, 1200);
         if (isCancelled) break;
 
         try {
@@ -497,32 +534,7 @@ export default function SceneMatchReportModal({
 
           if (st.status === "completed") {
             done = true;
-            const fname = st.filename || reportFileName(session?.code || singleMatch?.report_code || "vuan");
-            setFileName(fname);
-            setProgressText("Đang tải dữ liệu PDF hiển thị...");
-
-            const { blob } = await casesApi.fetchSceneReportPdfBlob(reportId, fname);
-            if (isCancelled) return;
-
-            const objUrl = URL.createObjectURL(blob);
-            if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-            urlRef.current = objUrl;
-
-            setPdfBlob(blob);
-            setPdfUrl(objUrl);
-            setLoading(false);
-
-            if (initialAction === "download") {
-              const a = document.createElement("a");
-              a.href = objUrl;
-              a.download = fname;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              setMsg(t("pdf.download_success") || "Đã tải file PDF thành công!");
-            } else if (initialAction === "usb") {
-              handleSaveToUsb(blob, fname);
-            }
+            await finishWithPdf(reportId, st);
           } else if (st.status === "error") {
             done = true;
             setErr(st.error || "Lỗi tạo file PDF từ máy chủ");

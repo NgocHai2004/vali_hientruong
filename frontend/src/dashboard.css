@@ -1326,6 +1326,11 @@
     display: flex;
     flex-direction: column;
     gap: 0;
+    /* ponytail: fixed panel height can clip a trailing row mid-line when scrolled;
+       fade it out instead of a hard cut. Upgrade to a JS overflow-aware toggle if the
+       always-on fade looks off on very short lists. */
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.25rem), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 2.25rem), transparent 100%);
   }
   .activity-row {
     display: grid;
