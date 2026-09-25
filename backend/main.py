@@ -24,6 +24,7 @@ from db.mongo import (
 )
 from services.fp_quality import _load_fp_config, _push_fp_quality_safe
 from services.hbie_matcher import _load_hbie_config
+from services.scene_report_service import close_report_browser
 
 from routers import (
     auth,
@@ -52,6 +53,7 @@ async def lifespan(app: FastAPI):
         pass
     asyncio.create_task(_push_fp_quality_safe())
     yield
+    await close_report_browser()
     close_db()
 
 

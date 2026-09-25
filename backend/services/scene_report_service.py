@@ -3,8 +3,6 @@ import re
 import io
 import base64
 import asyncio
-import shutil
-import tempfile
 import uuid
 from html import escape
 from fastapi import HTTPException
@@ -48,6 +46,45 @@ def find_chromium_executable() -> Optional[str]:
         if p and os.path.isfile(p):
             return p
     return None
+
+
+# Giu 1 tien trinh Chromium headless song san, dung lai cho moi lan in PDF thay vi
+# spawn tien trinh moi moi lan (tiet kiem ~2s khoi dong Chromium moi lan export).
+_pw_ctx = None
+_pw_browser = None
+_pw_lock = asyncio.Lock()
+
+
+async def _get_report_browser():
+    global _pw_ctx, _pw_browser
+    if _pw_browser is not None and _pw_browser.is_connected():
+        return _pw_browser
+    async with _pw_lock:
+        if _pw_browser is not None and _pw_browser.is_connected():
+            return _pw_browser
+        chromium_path = find_chromium_executable()
+        if not chromium_path:
+            raise RuntimeError("Không tìm thấy trình duyệt Chromium/Edge để tạo file PDF trên máy chủ.")
+        from playwright.async_api import async_playwright
+        if _pw_ctx is None:
+            _pw_ctx = await async_playwright().start()
+        _pw_browser = await _pw_ctx.chromium.launch(
+            executable_path=chromium_path,
+            headless=True,
+            args=["--disable-gpu"],
+        )
+        return _pw_browser
+
+
+async def close_report_browser():
+    """Goi khi tat server de dong sach tien trinh Chromium con giu san."""
+    global _pw_ctx, _pw_browser
+    if _pw_browser is not None:
+        await _pw_browser.close()
+        _pw_browser = None
+    if _pw_ctx is not None:
+        await _pw_ctx.stop()
+        _pw_ctx = None
 
 
 def _oid(id_str: Any) -> Any:
@@ -1069,11 +1106,7 @@ async def generate_scene_report_pdf(
     reports_dir: str = "",
     report_data: Optional[dict] = None,
 ) -> str:
-    """Generates PDF using Chromium headless and returns path to created PDF file."""
-    chromium = find_chromium_executable()
-    if not chromium:
-        raise RuntimeError("Không tìm thấy trình duyệt Chromium/Edge để tạo file PDF trên máy chủ.")
-
+    """Generates PDF using a warm headless Chromium (Edge) instance, returns path to created PDF file."""
     os.makedirs(reports_dir, exist_ok=True)
     report_data = report_data if report_data is not None else await build_scene_report_data(
         db, case_id=case_id, scope=scope, match_id=match_id,
@@ -1086,52 +1119,17 @@ async def generate_scene_report_pdf(
     pdf_filename = f"Bao_cao_doi_sanh_{case_code_safe}_{ts}_{uuid.uuid4().hex}.pdf"
     pdf_path = os.path.join(reports_dir, pdf_filename)
 
-    with tempfile.NamedTemporaryFile("w", suffix=".html", encoding="utf-8", delete=False) as tf:
-        tf.write(html_content)
-        temp_html_path = tf.name
-
-    # Hồ sơ trình duyệt riêng cho mỗi lần in: khỏi đụng hồ sơ Edge thật của máy
-    # (và 2 lần in song song không tranh khoá nhau). Đo thực tế nhanh hơn ~0,2 giây.
-    profile_dir = tempfile.mkdtemp(prefix="report_profile_")
-    cmd = [
-        chromium,
-        "--headless=new",
-        "--disable-gpu",
-        "--run-all-compositor-stages-before-draw",
-        "--no-pdf-header-footer",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-extensions",
-        "--disable-background-networking",
-        "--disable-component-update",
-        "--disable-sync",
-        f"--user-data-dir={profile_dir}",
-        f"--print-to-pdf={pdf_path}",
-        temp_html_path,
-    ]
-
+    browser = await _get_report_browser()
+    page = await browser.new_page()
     try:
-        import subprocess
-
-        def _run_chrome():
-            return subprocess.run(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=30,
-            )
-
-        res = await asyncio.to_thread(_run_chrome)
-        if res.returncode != 0:
-            err_msg = res.stderr.decode(errors="ignore")
-            raise RuntimeError(f"Lỗi khi Chromium tạo PDF (code {res.returncode}): {err_msg}")
-        if not os.path.isfile(pdf_path) or os.path.getsize(pdf_path) == 0:
-            raise RuntimeError("Chromium không tạo được file PDF hoặc file tạo ra rỗng.")
-        return pdf_path
+        await page.set_content(html_content, wait_until="networkidle")
+        # @page { size: A4 portrait; margin: 0 } trong html report -> giu nguyen bang CSS.
+        await page.pdf(path=pdf_path, print_background=True, prefer_css_page_size=True)
+    except Exception as e:
+        raise RuntimeError(f"Lỗi khi Chromium tạo PDF: {e}")
     finally:
-        shutil.rmtree(profile_dir, ignore_errors=True)
-        try:
-            if os.path.isfile(temp_html_path):
-                os.remove(temp_html_path)
-        except OSError:
-            pass
+        await page.close()
+
+    if not os.path.isfile(pdf_path) or os.path.getsize(pdf_path) == 0:
+        raise RuntimeError("Chromium không tạo được file PDF hoặc file tạo ra rỗng.")
+    return pdf_path

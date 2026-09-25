@@ -11,3 +11,4 @@ httpx
 openpyxl
 pillow
 scipy
+playwright
