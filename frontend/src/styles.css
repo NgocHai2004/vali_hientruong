@@ -9923,11 +9923,11 @@ textarea.input {
   /* TRAN chieu cao: khong co no thi `flex: 1 1 0` cho 4 o chum GIAN RA LAP het
      chieu cao con lai cua cot, day hang nut + phan ben duoi ra khoi tam nhin.
      Dat tran theo be ngang cot (cqw) de o van co gian theo man hinh:
-     .fp-plain-row chia 0.8/1.4/0.8 => cot ngoai ~ 26% be ngang hang. 42cqw (truoc
-     60cqw) ha CA BON khung anh (2 o ban tay + 2 nua o ngon cai) xuong ro ret de
-     hang nut va phan ben duoi lo ra trong tam nhin, khong phai cuon.
+     .fp-plain-row chia 0.8/1.4/0.8 => cot ngoai ~ 26% be ngang hang. 38cqw (truoc
+     42cqw, truoc nua 60cqw) ha CA BON khung anh (2 o ban tay + 2 nua o ngon cai)
+     xuong them chut nua, nhuong phan cao vua ha cho hang nut to len.
      Anh `object-fit: contain` nen ha chieu cao khong cat mat gi cua anh. */
-  max-height: 42cqw;
+  max-height: 38cqw;
 }
 .cap-flat .fp-side > .fp-block > .fp-plain-row { container-type: inline-size; }
 /* Hang nut xuong DAY cot => mep duoi thang mep duoi hang 2 cua luoi van lan.
@@ -11731,7 +11731,8 @@ table thead th {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  justify-content: flex-end;
+  /* Truoc: flex-end don ca 4 nut sat phai, bo trong khoang thua ben trai.
+     Gio: khong can justify - moi nut tu gian deu (flex: 1 1 0) lap kin hang. */
   flex: 0 0 auto;
   width: 100%;
   margin: 0;
@@ -11742,15 +11743,16 @@ table thead th {
   gap: 0.375rem;
 }
 .app .capture-page.cap-flat .fp-side > .case-action-bar .button {
+  flex: 1 1 0;
   width: auto;
   min-width: 0;
   min-height: 0;
-  height: 2.125rem;
-  padding: 0 0.875rem;
-  font-size: 0.8125rem;
+  height: 2.375rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
   line-height: 1;
   white-space: nowrap;
 }
-/* Ca 4 nut can le phai: ghi de margin-right:auto cua .primary (rule goc) va .danger. */
+/* Ca 4 nut can deu theo space-between: khong con margin rieng. */
 .app .capture-page.cap-flat .fp-side > .case-action-bar .button { margin: 0; }
-.app .capture-page.cap-flat .fp-side > .case-action-bar .button svg { width: 0.9375rem; height: 0.9375rem; }
+.app .capture-page.cap-flat .fp-side > .case-action-bar .button svg { width: 1rem; height: 1rem; }

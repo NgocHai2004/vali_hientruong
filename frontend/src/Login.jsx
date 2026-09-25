@@ -63,6 +63,19 @@ export default function Login({ onLogin }) {
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
+    const u = username.trim();
+    if (!u && !password) {
+      setErr(t("login.err.no_username_password"));
+      return;
+    }
+    if (!u) {
+      setErr(t("login.err.no_username"));
+      return;
+    }
+    if (!password) {
+      setErr(t("login.err.no_password"));
+      return;
+    }
     setLoading(true);
     try {
       const data = await api.login(username.trim(), password);

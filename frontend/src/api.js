@@ -175,7 +175,12 @@ export const api = {
     }
     let data;
     try { data = await res.json(); } catch { throw new Error(apiT("api.error.login_bad_response")); }
-    if (!res.ok) throw new Error(data.detail || apiT("api.error.login_failed", { status: res.status }));
+    if (!res.ok) {
+      const detail = Array.isArray(data?.detail)
+        ? data.detail.map((e) => `${e.loc ? e.loc.join(".") : "?"}: ${e.msg}`).join("; ")
+        : data.detail;
+      throw new Error(detail || apiT("api.error.login_failed", { status: res.status }));
+    }
     if (!data.access_token) throw new Error(apiT("api.error.login_no_token"));
     auth.save(data.access_token, data.username, data.role || "user", data.full_name || "");
     return data;
