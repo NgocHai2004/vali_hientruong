@@ -87,6 +87,16 @@ async def close_report_browser():
         _pw_ctx = None
 
 
+async def warmup_report_browser():
+    """Khoi dong san Chromium ngay luc server boot, de lan xuat bao cao dau
+    tien cua nguoi dung khong phai cho khoi dong trinh duyet nua. Nuot loi
+    (vd may khong co Edge/Chrome) de khong lam sap qua trinh khoi dong server."""
+    try:
+        await _get_report_browser()
+    except Exception:
+        pass
+
+
 def _oid(id_str: Any) -> Any:
     if isinstance(id_str, ObjectId):
         return id_str
@@ -1122,7 +1132,11 @@ async def generate_scene_report_pdf(
     browser = await _get_report_browser()
     page = await browser.new_page()
     try:
-        await page.set_content(html_content, wait_until="networkidle")
+        # "load" du dung: anh da nhung base64 san, khong co font/CSS/script tai
+        # tu ngoai nen khong co request mang thuc nao. networkidle bat buoc doi
+        # them toi thieu 500ms "khong co hoat dong mang" du chang co gi de doi
+        # (do thuc te: ~525ms lang phi cho khong).
+        await page.set_content(html_content, wait_until="load")
         # Khai bao tuong minh A4 + margin 0 thay vi de trinh duyet tu doc CSS @page:
         # prefer_css_page_size phu thuoc vao tung ban Chrome/Edge co ho tro CSS Paged
         # Media dung hay khong (may khac dung Chrome thay Edge da ra khac A4).

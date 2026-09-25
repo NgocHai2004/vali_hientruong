@@ -520,7 +520,7 @@ export default function SceneMatchReportModal({
       let done = false;
       let attempts = 0;
       const maxAttempts = 35;
-      let pollDelay = 400; // poll nhanh luc dau, tang dan de do doi request khi cho lau
+      let pollDelay = 150; // poll rat nhanh luc dau (phat hien xong viec som hon), tang dan de do doi request khi cho lau
 
       while (!isCancelled && !done && attempts < maxAttempts) {
         attempts++;
