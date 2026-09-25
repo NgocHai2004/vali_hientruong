@@ -1154,6 +1154,26 @@ function SceneTracePanel({
   onAddFiles, uploading, onDelete, onEdit, sort, setSort,
 }) {
   const [zoom, setZoom] = useState(null);
+  const trListRef = useRef(null);
+
+  // Gioi han danh sach hien dung 3 dong, phan con lai cuon (khong lo mep dong
+  // thu 4). Do chieu cao dong THAT bang JS thay vi doan theo rem trong CSS:
+  // chieu cao panel phu thuoc zoom/kich thuoc man hinh nen cach doan pixel
+  // tinh trong CSS da sai o cac zoom le (da thu 2 lan).
+  useEffect(() => {
+    const list = trListRef.current;
+    if (!list) return;
+    const applyMaxHeight = () => {
+      const firstRow = list.querySelector(".smp-tr-row");
+      if (!firstRow) { list.style.maxHeight = ""; return; }
+      const rowH = firstRow.getBoundingClientRect().height;
+      const gap = parseFloat(getComputedStyle(list).rowGap || getComputedStyle(list).gap || "0") || 0;
+      if (rowH > 0) list.style.maxHeight = `${rowH * 3 + gap * 2}px`;
+    };
+    applyMaxHeight();
+    window.addEventListener("resize", applyMaxHeight);
+    return () => window.removeEventListener("resize", applyMaxHeight);
+  }, [traces]);
 
   // Xem, chỉnh sửa hoặc xoá riêng từng dấu vết ngay trên dòng tương ứng.
   const actions = (it, grid) => (
@@ -1253,7 +1273,7 @@ function SceneTracePanel({
       {traces.length === 0 ? (
         <div className="scene-empty">{t("smp.trace.empty")}</div>
       ) : (
-        <div className="smp-tr-list">
+        <div className="smp-tr-list" ref={trListRef}>
           {traces.map((it) => (
             <div
               key={it.id}

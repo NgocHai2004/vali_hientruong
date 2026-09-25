@@ -507,7 +507,13 @@ label.smp-drop.on {
   gap: 0.5rem;
   flex: 1;
   min-height: 0;
+  /* Chieu cao that cua panel phu thuoc zoom/kich thuoc man hinh - khong doan
+     truoc duoc bang so rem (da thu cat cung 2 lan, lam mo 1 lan deu khong on).
+     Dung CSS Scroll Snap: trinh duyet tu khop diem dung cuon vao dung ranh
+     gioi 1 dong, khong bao gio dung giua chung 1 dong (dau tren lan duoi),
+     bat ke zoom/kich thuoc thuc te la bao nhieu. */
   overflow-y: auto;
+  scroll-snap-type: y mandatory;
   padding-right: 0.25rem;
   margin-top: 0.25rem;
 }
@@ -526,6 +532,8 @@ label.smp-drop.on {
   border: 1px solid #1b3355;
   background: rgba(11, 24, 44, .7);
   white-space: nowrap;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 .smp-tr-row:hover {
